@@ -1,6 +1,11 @@
 import bcrypt from 'bcryptjs'
 import { db } from '../db/database'
 import type { AuthUser, User, UserRole } from '../db/types'
+import {
+  getPersistentItem,
+  removePersistentItem,
+  setPersistentItem,
+} from '../utils/persistentStorage'
 
 const BCRYPT_ROUNDS = 12
 const SESSION_HOURS = 8
@@ -169,23 +174,23 @@ export async function login(
     createdAt: new Date(),
   })
 
-  sessionStorage.setItem(SESSION_TOKEN_KEY, token)
+  await setPersistentItem(SESSION_TOKEN_KEY, token)
 
   return toAuthUser(user)
 }
 
 export async function logout(): Promise<void> {
-  const token = sessionStorage.getItem(SESSION_TOKEN_KEY)
+  const token = await getPersistentItem(SESSION_TOKEN_KEY)
 
   if (token) {
     await db.sessions.where('token').equals(token).delete()
   }
 
-  sessionStorage.removeItem(SESSION_TOKEN_KEY)
+  await removePersistentItem(SESSION_TOKEN_KEY)
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const token = sessionStorage.getItem(SESSION_TOKEN_KEY)
+  const token = await getPersistentItem(SESSION_TOKEN_KEY)
   if (!token) {
     return null
   }
@@ -195,14 +200,14 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     if (session) {
       await db.sessions.delete(session.id!)
     }
-    sessionStorage.removeItem(SESSION_TOKEN_KEY)
+    await removePersistentItem(SESSION_TOKEN_KEY)
     return null
   }
 
   const user = await db.users.get(session.userId)
   if (!user) {
     await db.sessions.where('token').equals(token).delete()
-    sessionStorage.removeItem(SESSION_TOKEN_KEY)
+    await removePersistentItem(SESSION_TOKEN_KEY)
     return null
   }
 

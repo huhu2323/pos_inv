@@ -4,11 +4,24 @@ import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { initDatabase } from './db/database'
 import './index.css'
-import App from './App.tsx'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+async function bootstrap() {
+  await initDatabase()
+
+  const { default: App } = await import('./App.tsx')
+  const root = document.getElementById('root')
+
+  if (!root) {
+    throw new Error('Root element not found')
+  }
+
+  createRoot(root).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+}
+
+void bootstrap()

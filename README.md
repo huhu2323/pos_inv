@@ -11,7 +11,7 @@
 
 An offline-first point-of-sale terminal for a single register. All sales, inventory, invoices, and settings are stored locally on the device — no backend server required.
 
-Runs as a **web app**, **desktop app** (Windows / macOS via Electron), or **Android tablet app** (via Capacitor).
+Runs as a **web app**, **desktop app** (Windows / macOS via Electron), or **mobile tablet app** (Android / iOS via Capacitor).
 
 ---
 
@@ -86,6 +86,7 @@ Receipt header/footer, VAT, master password, auto-invoice, and barcode scanning 
 - Responsive sidebar (collapsible on desktop, drawer on mobile)
 - Large touch targets throughout the POS screen
 - PHP currency formatting (`en-PH` locale)
+- Desktop production builds open fullscreen by default
 
 ---
 
@@ -227,13 +228,24 @@ Use **Data Archiver** when the sales and invoice tables grow large:
 
 All data lives on the device. Nothing is sent to a remote server.
 
-| Storage | Used for |
-|---------|----------|
-| **Dexie / IndexedDB** | Users, sessions, products, sales, invoices, settings, archives, inventory logs |
-| **OPFS** (`product-images/`) | Product image files (primary, when supported) |
-| **IndexedDB `images` table** | Product image fallback when OPFS is unavailable |
-| **sessionStorage** | Current auth token |
-| **localStorage** | Theme mode, sidebar collapsed state |
+Storage backend depends on the platform:
+
+| Platform | Database | Auth session | Images |
+|----------|----------|--------------|--------|
+| **Web** | Dexie / IndexedDB | `localStorage` | OPFS, or IndexedDB fallback |
+| **Desktop** (Electron) | Dexie / IndexedDB (`persist:tofu-pos` partition) | `localStorage` | OPFS, or IndexedDB fallback |
+| **Android / iOS** (Capacitor) | Native **SQLite** (`@capacitor-community/sqlite`) | Capacitor **Preferences** | SQLite `images` table |
+
+On first launch after an Android/iOS update, any data still in the WebView IndexedDB is migrated into SQLite automatically.
+
+### What is stored where
+
+| Data | Tables / keys |
+|------|----------------|
+| Users, sessions, products, sales, invoices, settings, archives, inventory logs | `users`, `sessions`, `products`, `sales`, `invoices`, `settings`, `dataArchives`, `inventoryLogs` |
+| Product images | OPFS / IndexedDB / SQLite `images` (platform-dependent) |
+| Auth token | `tofu_auth_token` in `localStorage` or Capacitor Preferences |
+| Theme mode, sidebar state | `localStorage` |
 
 Image uploads are limited to **2 MB** and must be `image/*` files. Stored image keys use the format `img:{uuid}`.
 
@@ -247,7 +259,7 @@ Image uploads are limited to **2 MB** and must be `image/*` files. Stored image 
 npm run electron:dev
 ```
 
-Starts the Vite dev server and opens the app in an Electron window with hot reload.
+Starts the Vite dev server and opens the app in a normal windowed Electron shell with hot reload.
 
 ### Production build
 
@@ -262,7 +274,18 @@ Outputs installers to `release/`:
 | macOS | `.dmg` |
 | Windows | `.exe` (NSIS installer) |
 
-The Electron shell serves the built app over `http://127.0.0.1` so IndexedDB storage remains stable across sessions.
+### Production behaviour
+
+- Loads the built app with **`loadFile()`** (no local HTTP server) so data persists reliably and macOS dock-reopen works.
+- Opens **fullscreen** by default in production builds.
+- Uses a named persistent session partition (`persist:tofu-pos`) so IndexedDB survives restarts.
+- Allows only **one app instance** at a time; launching again focuses the existing window.
+
+### macOS notes
+
+- Closing the window (red button) **does not quit** the app — click the dock icon to reopen.
+- Use **Cmd+Q** or the menu bar to fully quit.
+- Reopening from the dock recreates the window without a white screen.
 
 ---
 
@@ -283,9 +306,33 @@ npm run cap:android
 Build the APK or AAB from Android Studio (**Build → Build Bundle(s) / APK(s)**).
 
 - **App ID:** `com.tofu.pos`
+- **Database:** native SQLite (not WebView IndexedDB)
 - **Hardware back button:** navigates back in-app, or exits from the login screen
 
 Requires Android Studio, Android SDK, and a compatible JDK installed locally.
+
+---
+
+## Running on iOS (Capacitor)
+
+### Requirements
+
+- macOS with Xcode installed
+- CocoaPods (`brew install cocoapods`)
+
+### Sync and open in Xcode
+
+```bash
+npm run cap:sync
+npm run cap:ios
+```
+
+Build and run on a simulator or device from Xcode.
+
+- **App ID:** `com.tofu.pos`
+- **Database:** native SQLite (not WebView IndexedDB)
+
+On first add of the iOS platform: `npx cap add ios`, then `npm run cap:sync`.
 
 ---
 
@@ -302,6 +349,7 @@ Requires Android Studio, Android SDK, and a compatible JDK installed locally.
 | `npm run electron:build` | Desktop installers |
 | `npm run cap:sync` | Build and sync to Capacitor |
 | `npm run cap:android` | Sync and open Android Studio |
+| `npm run cap:ios` | Sync and open Xcode |
 
 ---
 
@@ -311,12 +359,13 @@ Requires Android Studio, Android SDK, and a compatible JDK installed locally.
 |-------|------------|
 | UI | React 19, TypeScript, MUI 9 |
 | Routing | React Router 7 (`HashRouter`) |
-| Local database | Dexie 4 (IndexedDB) |
+| Local database (web / desktop) | Dexie 4 (IndexedDB) |
+| Local database (Android / iOS) | `@capacitor-community/sqlite` |
 | Authentication | bcryptjs, session tokens |
 | PDF / printing | jsPDF |
-| Images | OPFS + IndexedDB fallback |
+| Images | OPFS + IndexedDB fallback (web/desktop); SQLite (mobile) |
 | Desktop | Electron 36, electron-builder |
-| Mobile | Capacitor 7 (Android) |
+| Mobile | Capacitor 7 (Android, iOS) |
 | Build | Vite 8 |
 
 ---
@@ -328,7 +377,7 @@ tofu-pos-term/
 ├── src/
 │   ├── auth/           # Login, sessions, roles
 │   ├── components/     # Shared UI and POS dialogs
-│   ├── db/             # Dexie schema and types
+│   ├── db/             # Dexie schema, SQLite adapter, types
 │   ├── hooks/          # React hooks (images, back button)
 │   ├── layouts/        # App shell with sidebar
 │   ├── pages/          # Route pages
@@ -337,6 +386,7 @@ tofu-pos-term/
 │   └── utils/          # Currency, VAT, invoices
 ├── electron/           # Electron main + preload
 ├── android/            # Capacitor Android project
+├── ios/                # Capacitor iOS project
 ├── public/             # Static assets (favicon, default product image)
 ├── docs/screenshots/   # README screenshots
 └── dist/               # Production web build (generated)
@@ -347,7 +397,7 @@ tofu-pos-term/
 ## Security notes
 
 - Passwords are hashed with bcrypt (12 rounds).
-- Sessions expire after **8 hours**.
+- Sessions expire after **8 hours**; the session token is persisted locally so reopening the app does not require signing in again (until expiry).
 - **5 failed login attempts** lock the username for **15 minutes** (in-memory, per session).
 - The master password is stored as a bcrypt hash in local settings.
 - All data is local to the device — protect physical access to the terminal.

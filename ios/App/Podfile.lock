@@ -1,0 +1,55 @@
+PODS:
+  - Capacitor (7.6.6):
+    - CapacitorCordova
+  - CapacitorApp (7.1.2):
+    - Capacitor
+  - CapacitorCommunitySqlite (7.0.3):
+    - Capacitor
+    - SQLCipher
+    - ZIPFoundation
+  - CapacitorCordova (7.6.6)
+  - CapacitorPreferences (7.0.4):
+    - Capacitor
+  - SQLCipher (4.10.0):
+    - SQLCipher/standard (= 4.10.0)
+  - SQLCipher/common (4.10.0)
+  - SQLCipher/standard (4.10.0):
+    - SQLCipher/common
+  - ZIPFoundation (0.9.20)
+
+DEPENDENCIES:
+  - "Capacitor (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
+  - "CapacitorCommunitySqlite (from `../../node_modules/@capacitor-community/sqlite`)"
+  - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorPreferences (from `../../node_modules/@capacitor/preferences`)"
+
+SPEC REPOS:
+  trunk:
+    - SQLCipher
+    - ZIPFoundation
+
+EXTERNAL SOURCES:
+  Capacitor:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorApp:
+    :path: "../../node_modules/@capacitor/app"
+  CapacitorCommunitySqlite:
+    :path: "../../node_modules/@capacitor-community/sqlite"
+  CapacitorCordova:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorPreferences:
+    :path: "../../node_modules/@capacitor/preferences"
+
+SPEC CHECKSUMS:
+  Capacitor: 961efd309ab0e390a8081b63c561186f61a6714d
+  CapacitorApp: f01a913211780e0718dae9750442c3e23f96e106
+  CapacitorCommunitySqlite: 4813d82ad33001e612a39d313cb5d28066cbafda
+  CapacitorCordova: 3a4e0027a89a59421c918d19aee9d6ba1c7a3556
+  CapacitorPreferences: 69d9991307507aeab8ef8019c10b9babfda0e9ca
+  SQLCipher: eb79c64049cb002b4e9fcb30edb7979bf4706dfc
+  ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
+
+PODFILE CHECKSUM: a903541f582a06d23fa6f9eb21111f1bdc887bca
+
+COCOAPODS: 1.16.2

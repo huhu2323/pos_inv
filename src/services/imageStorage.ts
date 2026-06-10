@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import { db } from '../db/database'
 
 export const DEFAULT_PRODUCT_IMAGE = `${import.meta.env.BASE_URL}default-product.svg`
@@ -27,6 +28,7 @@ export function isDataUrl(value: string): boolean {
 
 export function isOpfsSupported(): boolean {
   return (
+    !Capacitor.isNativePlatform() &&
     typeof navigator !== 'undefined' &&
     'storage' in navigator &&
     'getDirectory' in navigator.storage
