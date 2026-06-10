@@ -11,7 +11,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { StoredImage } from '../StoredImage'
 import {
   filterSellableItems,
@@ -36,13 +36,17 @@ export function PosSearchDialog({
 }: PosSearchDialogProps) {
   const [query, setQuery] = useState('')
 
-  useEffect(() => {
-    if (!open) {
-      setQuery('')
-    }
-  }, [open])
-
   const results = useMemo(() => filterSellableItems(items, query), [items, query])
+
+  function handleClose() {
+    setQuery('')
+    onClose()
+  }
+
+  function handleSelectItem(item: PosSellableItem) {
+    setQuery('')
+    onSelectItem(item)
+  }
 
   function handleInput(value: string) {
     setQuery((current) => `${current}${value}`)
@@ -55,7 +59,7 @@ export function PosSearchDialog({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       disablePortal
       disableScrollLock
       fullWidth
@@ -76,7 +80,7 @@ export function PosSearchDialog({
           <SearchIcon />
           <Typography variant="h6">Search products</Typography>
         </Stack>
-        <IconButton aria-label="Close search" onClick={onClose} sx={touchCloseSx}>
+        <IconButton aria-label="Close search" onClick={handleClose} sx={touchCloseSx}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -117,7 +121,7 @@ export function PosSearchDialog({
                 <Button
                   key={item.key}
                   variant="outlined"
-                  onClick={() => onSelectItem(item)}
+                  onClick={() => handleSelectItem(item)}
                   sx={{
                     justifyContent: 'flex-start',
                     textAlign: 'left',

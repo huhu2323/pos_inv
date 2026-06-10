@@ -44,9 +44,6 @@ export function PosBarcodeDialog({
 
   useEffect(() => {
     if (!open) {
-      setBarcode('')
-      setError(null)
-      setVariantProduct(null)
       return
     }
 
