@@ -7,7 +7,7 @@ export async function migrateFromDexieIfNeeded(sqliteDb: SqliteDatabase): Promis
     return
   }
 
-  let dexieUserCount = 0
+  let dexieUserCount: number
   try {
     dexieUserCount = await dexieDb.users.count()
   } catch {

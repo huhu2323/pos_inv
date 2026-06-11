@@ -145,9 +145,12 @@ class WhereQuery<T> {
   between(
     lower: unknown,
     upper: unknown,
-    _includeLower: boolean,
-    _includeUpper: boolean,
+    includeLower = true,
+    includeUpper = true,
   ): WhereBetweenQuery<T> {
+    // Dexie passes inclusive flags; SQLite queries always use inclusive bounds.
+    void includeLower
+    void includeUpper
     return new WhereBetweenQuery(this.table, this.field, lower, upper)
   }
 }
