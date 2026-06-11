@@ -63,13 +63,24 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Create release
-        uses: softprops/action-gh-release@v2
+      - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        with:
-          token: ${{ github.token }}
-          generate_release_notes: true
-          files: artifacts/**
-          draft: false
-          prerelease: false
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+
+          mapfile -t files < <(find artifacts -type f)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No installer files found in artifacts/"
+            exit 1
+          fi
+
+          echo "Uploading ${#files[@]} file(s) for ${tag}:"
+          printf '  - %s\n' "${files[@]}"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            gh release create "$tag" "${files[@]}" --generate-notes --title "Tofu POS ${tag#v}"
+          fi
