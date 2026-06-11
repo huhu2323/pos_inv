@@ -350,6 +350,10 @@ On first add of the iOS platform: `npx cap add ios`, then `npm run cap:sync`.
 | `npm run cap:sync` | Build and sync to Capacitor |
 | `npm run cap:android` | Sync and open Android Studio |
 | `npm run cap:ios` | Sync and open Xcode |
+| `npm run release` | Interactive desktop release (macOS / Linux / Git Bash) |
+| `npm run release:win` | Interactive desktop release (Windows PowerShell) |
+
+See [docs/RELEASING.md](docs/RELEASING.md) for the full release checklist.
 
 ---
 
@@ -372,25 +376,24 @@ On first add of the iOS platform: `npx cap add ios`, then `npm run cap:sync`.
 
 ## Project structure
 
+The frontend uses a **feature-based** layout: each business domain (POS, products, sales, etc.) owns its pages and components under `src/features/`, with shared UI and data layers in `src/shared/` and `src/lib/`.
+
 ```
 tofu-pos-term/
 ├── src/
-│   ├── auth/           # Login, sessions, roles
-│   ├── components/     # Shared UI and POS dialogs
-│   ├── db/             # Dexie schema, SQLite adapter, types
-│   ├── hooks/          # React hooks (images, back button)
-│   ├── layouts/        # App shell with sidebar
-│   ├── pages/          # Route pages
-│   ├── services/       # Business logic
-│   ├── theme/          # Light/dark theme
-│   └── utils/          # Currency, VAT, invoices
+│   ├── app/              # Routes, providers, root App
+│   ├── features/         # Domain modules (auth, pos, products, sales, …)
+│   ├── shared/           # Layout, theme, hooks, cross-feature utils
+│   └── lib/              # Database (Dexie/SQLite) and entity services
 ├── electron/           # Electron main + preload
 ├── android/            # Capacitor Android project
 ├── ios/                # Capacitor iOS project
 ├── public/             # Static assets (favicon, default product image)
-├── docs/screenshots/   # README screenshots
+├── docs/               # Architecture and release docs
 └── dist/               # Production web build (generated)
 ```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full frontend architecture guide (routing, imports, adding features, POS breakdown).
 
 ---
 
