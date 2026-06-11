@@ -42,11 +42,28 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Collect installers
+        shell: bash
+        run: |
+          mkdir -p installers
+          shopt -s nullglob
+          if [ "${{ matrix.platform }}" = "mac" ]; then
+            cp release/*.dmg installers/
+          else
+            cp release/*.exe installers/
+          fi
+          if [ -z "$(ls -A installers)" ]; then
+            echo "No installer found in release/"
+            ls -la release/
+            exit 1
+          fi
+          ls -la installers/
+
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-installer
-          path: release/*
+          path: installers/*
           if-no-files-found: error
 
   release:
@@ -75,7 +92,7 @@ jobs:
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
 
-          mapfile -t files < <(find artifacts -type f)
+          mapfile -t files < <(find artifacts -type f \( -name '*.dmg' -o -name '*.exe' \))
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No installer files found in artifacts/"
             exit 1
