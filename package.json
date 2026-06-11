@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && npm run build:electron && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
-    "electron:build": "npm run build && npm run build:electron && electron-builder",
+    "electron:build": "npm run build && npm run build:electron && electron-builder --publish never",
     "cap:sync": "npm run build && cap sync",
     "cap:android": "npm run cap:sync && cap open android",
     "cap:ios": "npm run cap:sync && cap open ios"
@@ -59,6 +59,7 @@
   "build": {
     "appId": "com.tofu.pos",
     "productName": "Tofu POS",
+    "publish": null,
     "directories": {
       "output": "release"
     },
