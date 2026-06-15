@@ -43,7 +43,7 @@ Admin catalog management with barcodes, variants, images, stock quantities, and 
 
 ### Settings
 
-Receipt header/footer, VAT, master password, auto-invoice, and barcode scanning options.
+Invoice and receipt headers, VAT, master password, Auto Print, and barcode scanning options.
 
 ![Settings page](docs/screenshots/05-settings.png)
 
@@ -66,7 +66,8 @@ Receipt header/footer, VAT, master password, auto-invoice, and barcode scanning 
 - Complete transaction history with line-item detail
 - Sequential 6-digit invoice numbers (`000001`, `000002`, …)
 - 80 mm thermal-style PDF receipts via jsPDF
-- Optional auto-invoice + print after each completed sale
+- Invoice, Official Receipt, and Acknowledgement Receipt print formats
+- Optional Auto Print after each completed sale (Off, Invoice, Official Receipt, or Acknowledgement Receipt)
 - Void sales with stock restoration (cashiers require master password)
 - VAT breakdown on every invoice
 
@@ -168,7 +169,7 @@ There are **no built-in default credentials**. Every installation starts from th
 3. Adjust quantities with **+** / **−** or remove lines.
 4. Enter the amount paid via the numpad or quick-bill buttons.
 5. Press **Complete sale** when the amount covers the total.
-6. If **Auto-invoice** is enabled in Settings, an invoice is created and the print dialog opens.
+6. If **Auto Print** is enabled in Settings, the selected document is printed automatically (Invoice also creates an invoice record).
 
 ### Barcode scanning
 
@@ -178,20 +179,21 @@ Camera-based scanning is not implemented; the scanner icon refers to keyboard-we
 
 ---
 
-## Invoice printing
+## Receipt printing
 
 Receipts are generated client-side as PDF using jsPDF:
 
 - **Width:** 80 mm (thermal receipt format)
-- **Header:** Main text, address, contact number, TIN
-- **Body:** Date, cashier, invoice number, line items, net amount, VAT, total, amount paid, change
-- **Footer:** Configurable bottom text (default: "Thank You")
+- **Document types:** Invoice, Official Receipt, Acknowledgement Receipt (each with a bold title header)
+- **Header:** Main text, address, contact number, TIN (Invoice and Official Receipt use separate header/footer settings)
+- **Body:** Date, cashier, document number, line items, net amount, VAT, total, amount paid, change
+- **Footer:** Configurable bottom text, or fixed **THIS IS NOT OFFICIAL RECEIPT** for Acknowledgement Receipts
 
 **Print flow:**
 1. PDF opens in a new window with the browser/Electron print dialog.
-2. If popups are blocked, the file downloads as `invoice-XXXXXX.pdf`.
+2. If popups are blocked, the file downloads as `invoice-XXXXXX.pdf`, `official-receipt-XXXXXX.pdf`, or `acknowledgement-receipt-XXXXXX.pdf`.
 
-Invoices can be printed from **POS** (auto-invoice), **Sales**, or **Invoices**.
+Documents can be printed from **POS** (Auto Print), **Sales**, or **Invoices**.
 
 ---
 
@@ -200,14 +202,19 @@ Invoices can be printed from **POS** (auto-invoice), **Sales**, or **Invoices**.
 | Setting | Default | Description |
 |---------|---------|-------------|
 | Master password | *(empty)* | Required for cashiers to void sales; required to archive data |
-| Receipt main text | `Tofu POS` | Bold centered header on receipts |
-| Address | *(empty)* | Multiline address below header |
-| Receipt contact number | *(empty)* | Phone or contact line |
-| TIN | *(empty)* | Tax ID, printed as `TIN: …` |
-| Bottom text | `Thank You` | Receipt footer |
-| VAT percentage | `12` | VAT rate applied to invoice subtotals (0–100) |
+| Invoice main text | `Tofu POS` | Bold centered store name on invoices |
+| Invoice address | *(empty)* | Multiline address below header |
+| Invoice contact number | *(empty)* | Phone or contact line |
+| Invoice TIN | *(empty)* | Tax ID, printed as `TIN: …` |
+| Invoice bottom text | `Thank You` | Invoice footer |
+| Official Receipt main text | `Tofu POS` | Bold centered store name on official receipts |
+| Official Receipt address | *(empty)* | Multiline address below header |
+| Official Receipt contact number | *(empty)* | Phone or contact line |
+| Official Receipt TIN | *(empty)* | Tax ID, printed as `TIN: …` |
+| Official Receipt bottom text | `Thank You` | Official receipt footer |
+| VAT percentage | `12` | VAT rate applied to receipt subtotals (0–100) |
 | Continuous barcode scanning | Off | Keep barcode dialog open between scans |
-| Auto-invoice | Off | Create and print an invoice after each POS sale |
+| Auto Print | Off | Print Invoice, Official Receipt, or Acknowledgement Receipt after each POS sale |
 
 ---
 
@@ -414,11 +421,10 @@ Screenshots in `docs/screenshots/` can be refreshed after UI changes:
 ```bash
 npm run build
 npx vite preview --port 4173 --strictPort &
-npx playwright install chromium   # one-time
 node scripts/capture-screenshots.mjs
 ```
 
-Requires Playwright (`npm install -D playwright`) and a running preview server.
+Requires Playwright (`npm install -D playwright` — already in devDependencies) and a running preview server. Run `npx playwright install chromium` once if browsers are not installed.
 
 ---
 
