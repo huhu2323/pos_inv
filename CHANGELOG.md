@@ -28,3 +28,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Version bump release.
+
+## [1.0.7] - 2026-06-15
+
+### Changes
+
+- 3 seperate print document, invoice, acknowledgement and official receipts
+- Settings ui fixes and change
+- Added sync button for future use
