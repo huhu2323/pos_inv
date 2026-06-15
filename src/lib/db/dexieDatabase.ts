@@ -375,6 +375,41 @@ export class TofuPosDatabase extends Dexie {
             }
           })
       })
+
+    this.version(21)
+      .stores({
+        users: '++id, &username, role, createdAt',
+        sessions: '++id, &token, userId, expiresAt',
+        products: 'id, &shortName, &barcode, name, createdAt, active',
+        images: 'id, createdAt',
+        inventoryLogs: 'id, productId, type, createdAt',
+        sales: 'id, type, status, createdAt, createdById, originalSaleId',
+        settings: 'id',
+        invoices: 'id, &invoiceNumber, saleId, createdAt, createdById',
+        dataArchives: 'id, status, createdAt, archivedById',
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table('settings')
+          .toCollection()
+          .modify((settings: Record<string, unknown>) => {
+            if (typeof settings.syncApiUrl !== 'string') {
+              settings.syncApiUrl = ''
+            }
+
+            if (typeof settings.syncTenantId !== 'string') {
+              settings.syncTenantId = ''
+            }
+
+            if (typeof settings.syncEmail !== 'string') {
+              settings.syncEmail = ''
+            }
+
+            if (typeof settings.syncPassword !== 'string') {
+              settings.syncPassword = ''
+            }
+          })
+      })
   }
 }
 

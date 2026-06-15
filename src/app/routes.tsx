@@ -6,7 +6,7 @@ import { DataArchiverPage } from '@/features/archive/pages/DataArchiverPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { EmployeesPage } from '@/features/employees/pages/EmployeesPage'
 import { InventoryPage } from '@/features/inventory/pages/InventoryPage'
-import { InvoicesPage } from '@/features/invoices/pages/InvoicesPage'
+import { ReceiptsPage } from '@/features/receipts/pages/ReceiptsPage'
 import { PosPage } from '@/features/pos/pages/PosPage'
 import { ProductsPage } from '@/features/products/pages/ProductsPage'
 import { SalesPage } from '@/features/sales/pages/SalesPage'
@@ -25,7 +25,8 @@ export function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/sales" element={<SalesPage />} />
-          <Route path="/invoices" element={<InvoicesPage />} />
+          <Route path="/receipts" element={<ReceiptsPage />} />
+          <Route path="/invoices" element={<Navigate to="/receipts" replace />} />
           <Route element={<AdminRoute />}>
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/inventory" element={<InventoryPage />} />

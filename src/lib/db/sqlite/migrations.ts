@@ -7,6 +7,10 @@ const SETTINGS_MIGRATIONS: Array<{ column: string; definition: string }> = [
   { column: 'officialReceiptContactNumber', definition: "TEXT NOT NULL DEFAULT ''" },
   { column: 'officialReceiptTin', definition: "TEXT NOT NULL DEFAULT ''" },
   { column: 'officialReceiptBottomText', definition: "TEXT NOT NULL DEFAULT 'Thank You'" },
+  { column: 'syncApiUrl', definition: "TEXT NOT NULL DEFAULT ''" },
+  { column: 'syncTenantId', definition: "TEXT NOT NULL DEFAULT ''" },
+  { column: 'syncEmail', definition: "TEXT NOT NULL DEFAULT ''" },
+  { column: 'syncPassword', definition: "TEXT NOT NULL DEFAULT ''" },
 ]
 
 async function getTableColumns(

@@ -8,7 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Sync button placeholder in Settings (UI only, no backend sync yet).
+- Receipts page with a unified table for invoices, official receipts, and acknowledgement receipts.
+- Server sync for products, sales, and invoices from Settings using API credentials and tenant ID.
+- Sync settings fields for API URL, tenant ID, email, and password.
+
+### Changed
+
+- Invoices sidebar menu replaced with Receipts, showing all document types in one place.
+- Sync button in Settings now pushes only new records, matched by local UUID.
 - Official Receipt and Acknowledgement Receipt print formats.
 - Official Receipt header and footer settings.
 - Auto Print setting with Off, Official Receipt, Invoice, and Acknowledgement Receipt options.

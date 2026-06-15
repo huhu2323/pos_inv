@@ -27,6 +27,10 @@ export type SettingsUpdateInput = {
   officialReceiptContactNumber: string
   officialReceiptTin: string
   officialReceiptBottomText: string
+  syncApiUrl?: string
+  syncTenantId?: string
+  syncEmail?: string
+  syncPassword?: string
 }
 
 function createDefaultSettings(): AppSettings {
@@ -48,6 +52,10 @@ function createDefaultSettings(): AppSettings {
     officialReceiptTin: '',
     officialReceiptBottomText: 'Thank You',
     invoiceNextNumber: 0,
+    syncApiUrl: '',
+    syncTenantId: '',
+    syncEmail: '',
+    syncPassword: '',
     updatedAt: now,
   }
 }
@@ -82,7 +90,11 @@ function isSettingsComplete(
     typeof settings.officialReceiptContactNumber === 'string' &&
     typeof settings.officialReceiptTin === 'string' &&
     typeof settings.officialReceiptBottomText === 'string' &&
-    typeof settings.invoiceNextNumber === 'number'
+    typeof settings.invoiceNextNumber === 'number' &&
+    typeof settings.syncApiUrl === 'string' &&
+    typeof settings.syncTenantId === 'string' &&
+    typeof settings.syncEmail === 'string' &&
+    typeof settings.syncPassword === 'string'
   )
 }
 
@@ -134,6 +146,10 @@ function normalizeSettings(
         : 'Thank You',
     invoiceNextNumber:
       typeof settings.invoiceNextNumber === 'number' ? settings.invoiceNextNumber : 0,
+    syncApiUrl: typeof settings.syncApiUrl === 'string' ? settings.syncApiUrl : '',
+    syncTenantId: typeof settings.syncTenantId === 'string' ? settings.syncTenantId : '',
+    syncEmail: typeof settings.syncEmail === 'string' ? settings.syncEmail : '',
+    syncPassword: typeof settings.syncPassword === 'string' ? settings.syncPassword : '',
   }
 }
 
@@ -196,6 +212,10 @@ export async function updateSettings(input: SettingsUpdateInput): Promise<AppSet
     officialReceiptContactNumber: input.officialReceiptContactNumber.trim(),
     officialReceiptTin: input.officialReceiptTin.trim(),
     officialReceiptBottomText: input.officialReceiptBottomText.trim() || 'Thank You',
+    syncApiUrl: (input.syncApiUrl ?? '').trim(),
+    syncTenantId: (input.syncTenantId ?? '').trim(),
+    syncEmail: (input.syncEmail ?? '').trim(),
+    syncPassword: input.syncPassword ?? '',
     updatedAt: new Date(),
   }
 

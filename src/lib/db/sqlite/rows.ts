@@ -283,6 +283,10 @@ export function rowToSettings(row: Record<string, unknown>): AppSettings {
         ? row.officialReceiptBottomText
         : 'Thank You',
     invoiceNextNumber: Number(row.invoiceNextNumber),
+    syncApiUrl: typeof row.syncApiUrl === 'string' ? row.syncApiUrl : '',
+    syncTenantId: typeof row.syncTenantId === 'string' ? row.syncTenantId : '',
+    syncEmail: typeof row.syncEmail === 'string' ? row.syncEmail : '',
+    syncPassword: typeof row.syncPassword === 'string' ? row.syncPassword : '',
     updatedAt: parseDate(row.updatedAt),
   }
 }
@@ -305,6 +309,10 @@ export function settingsToValues(settings: AppSettings): unknown[] {
     settings.officialReceiptTin,
     settings.officialReceiptBottomText,
     settings.invoiceNextNumber,
+    settings.syncApiUrl,
+    settings.syncTenantId,
+    settings.syncEmail,
+    settings.syncPassword,
     settings.updatedAt.toISOString(),
   ]
 }

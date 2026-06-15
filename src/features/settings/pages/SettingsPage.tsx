@@ -3,6 +3,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -18,6 +19,7 @@ import {
 import { useEffect, useState } from 'react'
 import type { AutoPrintMode } from '@/lib/db/types'
 import { getSettings, updateSettings } from '@/lib/services/settingsService'
+import { formatSyncSummary, syncWithServer } from '@/lib/services/syncService'
 
 export function SettingsPage() {
   const [autoPrint, setAutoPrint] = useState<AutoPrintMode>('off')
@@ -33,10 +35,15 @@ export function SettingsPage() {
   const [officialReceiptContactNumber, setOfficialReceiptContactNumber] = useState('')
   const [officialReceiptTin, setOfficialReceiptTin] = useState('')
   const [officialReceiptBottomText, setOfficialReceiptBottomText] = useState('Thank You')
+  const [syncApiUrl, setSyncApiUrl] = useState('')
+  const [syncTenantId, setSyncTenantId] = useState('')
+  const [syncEmail, setSyncEmail] = useState('')
+  const [syncPassword, setSyncPassword] = useState('')
   const [masterPassword, setMasterPassword] = useState('')
   const [hasExistingMasterPassword, setHasExistingMasterPassword] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -63,6 +70,10 @@ export function SettingsPage() {
           setOfficialReceiptContactNumber(settings.officialReceiptContactNumber)
           setOfficialReceiptTin(settings.officialReceiptTin)
           setOfficialReceiptBottomText(settings.officialReceiptBottomText)
+          setSyncApiUrl(settings.syncApiUrl)
+          setSyncTenantId(settings.syncTenantId)
+          setSyncEmail(settings.syncEmail)
+          setSyncPassword(settings.syncPassword)
           setHasExistingMasterPassword(Boolean(settings.masterPasswordHash))
         }
       } catch (err) {
@@ -108,6 +119,10 @@ export function SettingsPage() {
         officialReceiptContactNumber,
         officialReceiptTin,
         officialReceiptBottomText,
+        syncApiUrl,
+        syncTenantId,
+        syncEmail,
+        syncPassword,
         masterPassword: masterPassword.trim() || undefined,
       })
 
@@ -121,6 +136,41 @@ export function SettingsPage() {
       setError(err instanceof Error ? err.message : 'Failed to save settings')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleSync() {
+    setSyncing(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      await updateSettings({
+        autoPrint,
+        continuousBarcodeScanning,
+        vatPercentage: Number.parseFloat(vatPercentage),
+        receiptMainText,
+        receiptAddress,
+        receiptContactNumber,
+        receiptTin,
+        receiptBottomText,
+        officialReceiptMainText,
+        officialReceiptAddress,
+        officialReceiptContactNumber,
+        officialReceiptTin,
+        officialReceiptBottomText,
+        syncApiUrl,
+        syncTenantId,
+        syncEmail,
+        syncPassword,
+      })
+
+      const result = await syncWithServer()
+      setSuccess(formatSyncSummary(result))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sync failed')
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -366,11 +416,50 @@ export function SettingsPage() {
             Sync
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Sync local data with the server.
+            Push new products, sales, and invoices to the server. Existing records are matched by
+            their local UUID so nothing is duplicated.
           </Typography>
-          <Button variant="outlined" startIcon={<SyncIcon />}>
-            Sync
-          </Button>
+          <Stack spacing={2}>
+            <TextField
+              label="API URL"
+              value={syncApiUrl}
+              onChange={(event) => setSyncApiUrl(event.target.value)}
+              fullWidth
+              disabled={loading || saving || syncing}
+              placeholder="http://localhost:3000"
+            />
+            <TextField
+              label="Tenant ID"
+              value={syncTenantId}
+              onChange={(event) => setSyncTenantId(event.target.value)}
+              fullWidth
+              disabled={loading || saving || syncing}
+            />
+            <TextField
+              label="API email"
+              type="email"
+              value={syncEmail}
+              onChange={(event) => setSyncEmail(event.target.value)}
+              fullWidth
+              disabled={loading || saving || syncing}
+            />
+            <TextField
+              label="API password"
+              type="password"
+              value={syncPassword}
+              onChange={(event) => setSyncPassword(event.target.value)}
+              fullWidth
+              disabled={loading || saving || syncing}
+            />
+            <Button
+              variant="outlined"
+              startIcon={syncing ? <CircularProgress size={18} /> : <SyncIcon />}
+              onClick={() => void handleSync()}
+              disabled={loading || saving || syncing}
+            >
+              {syncing ? 'Syncing...' : 'Sync now'}
+            </Button>
+          </Stack>
           </Paper>
         </Grid>
 

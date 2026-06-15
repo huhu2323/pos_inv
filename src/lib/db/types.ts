@@ -128,6 +128,10 @@ export interface AppSettings {
   officialReceiptTin: string
   officialReceiptBottomText: string
   invoiceNextNumber: number
+  syncApiUrl: string
+  syncTenantId: string
+  syncEmail: string
+  syncPassword: string
   updatedAt: Date
 }
 

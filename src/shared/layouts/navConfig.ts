@@ -20,7 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Products', path: '/products', icon: Inventory2Icon, adminOnly: true },
   { label: 'Inventory', path: '/inventory', icon: WarehouseOutlinedIcon, adminOnly: true },
   { label: 'Sales', path: '/sales', icon: ReceiptLongIcon, adminOnly: false },
-  { label: 'Invoices', path: '/invoices', icon: DescriptionOutlinedIcon, adminOnly: false },
+  { label: 'Receipts', path: '/receipts', icon: DescriptionOutlinedIcon, adminOnly: false },
   { label: 'Employees', path: '/employees', icon: BadgeIcon, adminOnly: true },
   { label: 'Settings', path: '/settings', icon: SettingsIcon, adminOnly: true },
   { label: 'Data Archiver', path: '/data-archiver', icon: ArchiveOutlinedIcon, adminOnly: true },
