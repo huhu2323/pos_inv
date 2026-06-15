@@ -14,6 +14,7 @@ import {
   login,
   logout,
 } from '@/features/auth/api/authService'
+import { initializeSettings } from '@/lib/services/settingsService'
 import { AuthContext } from '@/features/auth/context/authContextState'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -70,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...input,
         role: 'admin' as UserRole,
       })
+      await initializeSettings(input.password)
       const authenticatedUser = await login(input.username, input.password)
       setUser(authenticatedUser ?? adminUser)
       setNeedsSetup(false)

@@ -83,6 +83,20 @@ validate_version() {
   fi
 }
 
+validate_changelog() {
+  local release_version="$1"
+
+  if [[ ! -f CHANGELOG.md ]]; then
+    echo "CHANGELOG.md is required before releasing." >&2
+    exit 1
+  fi
+
+  if ! node scripts/extract-changelog-notes.mjs "$release_version" >/dev/null; then
+    echo "Update CHANGELOG.md with a non-empty ## [${release_version}] section before releasing." >&2
+    exit 1
+  fi
+}
+
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "Required command not found: $1" >&2
@@ -150,6 +164,7 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 validate_version "$VERSION"
+validate_changelog "$VERSION"
 
 if [[ "$VERSION" == "$CURRENT_VERSION" ]]; then
   echo "Version is unchanged (${VERSION})." >&2
@@ -193,7 +208,7 @@ if ! confirm "Commit, push main, and push tag ${TAG}?"; then
 fi
 
 update_version "$VERSION"
-git add package.json
+git add package.json CHANGELOG.md
 git commit -m "Bump version to ${VERSION}."
 
 echo

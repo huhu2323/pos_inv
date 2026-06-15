@@ -324,17 +324,57 @@ export class TofuPosDatabase extends Dexie {
           })
       })
 
-    this.version(19).stores({
-      users: '++id, &username, role, createdAt',
-      sessions: '++id, &token, userId, expiresAt',
-      products: 'id, &shortName, &barcode, name, createdAt, active',
-      images: 'id, createdAt',
-      inventoryLogs: 'id, productId, type, createdAt',
-      sales: 'id, type, status, createdAt, createdById, originalSaleId',
-      settings: 'id',
-      invoices: 'id, &invoiceNumber, saleId, createdAt, createdById',
-      dataArchives: 'id, status, createdAt, archivedById',
-    })
+    this.version(20)
+      .stores({
+        users: '++id, &username, role, createdAt',
+        sessions: '++id, &token, userId, expiresAt',
+        products: 'id, &shortName, &barcode, name, createdAt, active',
+        images: 'id, createdAt',
+        inventoryLogs: 'id, productId, type, createdAt',
+        sales: 'id, type, status, createdAt, createdById, originalSaleId',
+        settings: 'id',
+        invoices: 'id, &invoiceNumber, saleId, createdAt, createdById',
+        dataArchives: 'id, status, createdAt, archivedById',
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table('settings')
+          .toCollection()
+          .modify((settings: Record<string, unknown>) => {
+            if (typeof settings.autoPrint !== 'string') {
+              if (typeof settings.autoInvoice === 'boolean') {
+                settings.autoPrint = settings.autoInvoice ? 'invoice' : 'off'
+              } else if (typeof settings.directInvoice === 'boolean') {
+                settings.autoPrint = settings.directInvoice ? 'invoice' : 'off'
+              } else {
+                settings.autoPrint = 'off'
+              }
+            }
+
+            delete settings.autoInvoice
+            delete settings.directInvoice
+
+            if (typeof settings.officialReceiptMainText !== 'string') {
+              settings.officialReceiptMainText = 'Tofu POS'
+            }
+
+            if (typeof settings.officialReceiptAddress !== 'string') {
+              settings.officialReceiptAddress = ''
+            }
+
+            if (typeof settings.officialReceiptContactNumber !== 'string') {
+              settings.officialReceiptContactNumber = ''
+            }
+
+            if (typeof settings.officialReceiptTin !== 'string') {
+              settings.officialReceiptTin = ''
+            }
+
+            if (typeof settings.officialReceiptBottomText !== 'string') {
+              settings.officialReceiptBottomText = 'Thank You'
+            }
+          })
+      })
   }
 }
 

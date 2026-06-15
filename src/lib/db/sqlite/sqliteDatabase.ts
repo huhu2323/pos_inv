@@ -14,6 +14,7 @@ import type {
   User,
 } from '@/lib/db/types'
 import { SQLITE_SCHEMA_STATEMENTS } from './schema'
+import { migrateSqliteSchema } from './migrations'
 import {
   dataArchiveToValues,
   imageToValues,
@@ -438,7 +439,7 @@ class SettingsTable extends SqliteTable<AppSettings> {
 
   async put(settings: AppSettings): Promise<void> {
     await this.connection.run(
-      `INSERT OR REPLACE INTO ${this.name} (id, masterPasswordHash, autoInvoice, continuousBarcodeScanning, vatPercentage, receiptMainText, receiptAddress, receiptContactNumber, receiptTin, receiptBottomText, invoiceNextNumber, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT OR REPLACE INTO ${this.name} (id, masterPasswordHash, autoPrint, continuousBarcodeScanning, vatPercentage, receiptMainText, receiptAddress, receiptContactNumber, receiptTin, receiptBottomText, officialReceiptMainText, officialReceiptAddress, officialReceiptContactNumber, officialReceiptTin, officialReceiptBottomText, invoiceNextNumber, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       settingsToValues(settings),
       false,
     )
@@ -555,5 +556,6 @@ export async function createSqliteDatabase(): Promise<SqliteDatabase> {
   const connection = await sqlite.createConnection(DB_NAME, false, 'no-encryption', 1, false)
   await connection.open()
   await connection.execute(SQLITE_SCHEMA_STATEMENTS, false)
+  await migrateSqliteSchema(connection)
   return new SqliteDatabase(connection)
 }

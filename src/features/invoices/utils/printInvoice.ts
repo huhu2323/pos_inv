@@ -1,5 +1,7 @@
 import { jsPDF } from 'jspdf'
-import type { AppSettings, Invoice, SaleLine } from '@/lib/db/types'
+import type { AppSettings, Invoice, PrintDocumentType, Sale, SaleLine } from '@/lib/db/types'
+import { getOrCreateInvoiceForSale } from '@/lib/services/invoiceService'
+import { calculateVatBreakdown } from '@/shared/utils/vat'
 
 const PAGE_WIDTH_MM = 80
 const MARGIN_MM = 6
@@ -9,20 +11,44 @@ const CONTENT_WIDTH_MM = CONTENT_RIGHT_MM - CONTENT_LEFT_MM
 const CENTER_X_MM = PAGE_WIDTH_MM / 2
 const LINE_HEIGHT_MM = 4
 const FONT_SIZE = 8
+const DOCUMENT_TITLE_FONT_SIZE = 9
+const STORE_NAME_FONT_SIZE = 11
 const VALUE_COLUMN_WIDTH_MM = 28
+
+const ACKNOWLEDGEMENT_RECEIPT_FOOTER = 'THIS IS NOT OFFICIAL RECEIPT'
 
 const amountFormatter = new Intl.NumberFormat('en-PH', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
 
-export type InvoicePrintSettings = Pick<
+export type PrintableDocument = Pick<
+  Invoice,
+  | 'lines'
+  | 'subtotal'
+  | 'amountPaid'
+  | 'change'
+  | 'vatPercentage'
+  | 'netAmount'
+  | 'vatAmount'
+  | 'createdByName'
+  | 'createdAt'
+> & {
+  documentNumber: string
+}
+
+type DocumentHeaderSettings = Pick<
   AppSettings,
   | 'receiptMainText'
   | 'receiptAddress'
   | 'receiptContactNumber'
   | 'receiptTin'
   | 'receiptBottomText'
+  | 'officialReceiptMainText'
+  | 'officialReceiptAddress'
+  | 'officialReceiptContactNumber'
+  | 'officialReceiptTin'
+  | 'officialReceiptBottomText'
 >
 
 function formatInvoiceAmount(value: number): string {
@@ -44,13 +70,128 @@ function formatLineLabel(line: SaleLine): string {
   return `${name} x${line.quantity}`
 }
 
-export function printInvoice(invoice: Invoice, settings: InvoicePrintSettings): void {
+function getHeaderSettings(
+  settings: DocumentHeaderSettings,
+  documentType: PrintDocumentType,
+): Pick<
+  AppSettings,
+  'receiptMainText' | 'receiptAddress' | 'receiptContactNumber' | 'receiptTin' | 'receiptBottomText'
+> {
+  if (documentType === 'official_receipt') {
+    return {
+      receiptMainText: settings.officialReceiptMainText,
+      receiptAddress: settings.officialReceiptAddress,
+      receiptContactNumber: settings.officialReceiptContactNumber,
+      receiptTin: settings.officialReceiptTin,
+      receiptBottomText: settings.officialReceiptBottomText,
+    }
+  }
+
+  return {
+    receiptMainText: settings.receiptMainText,
+    receiptAddress: settings.receiptAddress,
+    receiptContactNumber: settings.receiptContactNumber,
+    receiptTin: settings.receiptTin,
+    receiptBottomText: settings.receiptBottomText,
+  }
+}
+
+function getDocumentTitle(documentType: PrintDocumentType): string {
+  switch (documentType) {
+    case 'official_receipt':
+      return 'Official Receipt'
+    case 'acknowledgement_receipt':
+      return 'Acknowledgement Receipt'
+    default:
+      return 'Invoice'
+  }
+}
+
+function getDocumentNumberLabel(documentType: PrintDocumentType): string {
+  switch (documentType) {
+    case 'official_receipt':
+      return 'OR no.'
+    case 'acknowledgement_receipt':
+      return 'Ref no.'
+    default:
+      return 'Invoice no.'
+  }
+}
+
+function getBottomText(
+  settings: DocumentHeaderSettings,
+  documentType: PrintDocumentType,
+): string {
+  if (documentType === 'acknowledgement_receipt') {
+    return ACKNOWLEDGEMENT_RECEIPT_FOOTER
+  }
+
+  return getHeaderSettings(settings, documentType).receiptBottomText
+}
+
+function getPdfFilename(document: PrintableDocument, documentType: PrintDocumentType): string {
+  switch (documentType) {
+    case 'official_receipt':
+      return `official-receipt-${document.documentNumber}.pdf`
+    case 'acknowledgement_receipt':
+      return `acknowledgement-receipt-${document.documentNumber}.pdf`
+    default:
+      return `invoice-${document.documentNumber}.pdf`
+  }
+}
+
+export function buildPrintableDocumentFromSale(
+  sale: Sale,
+  settings: Pick<AppSettings, 'vatPercentage'>,
+  documentNumber: string,
+): PrintableDocument {
+  const vat = calculateVatBreakdown(sale.subtotal, settings.vatPercentage)
+
+  return {
+    documentNumber,
+    lines: sale.lines,
+    subtotal: sale.subtotal,
+    amountPaid: sale.amountPaid,
+    change: sale.change,
+    vatPercentage: settings.vatPercentage,
+    netAmount: vat.netAmount,
+    vatAmount: vat.vatAmount,
+    createdByName: sale.createdByName,
+    createdAt: sale.createdAt,
+  }
+}
+
+export function buildPrintableDocumentFromInvoice(invoice: Invoice): PrintableDocument {
+  return {
+    documentNumber: invoice.invoiceNumber,
+    lines: invoice.lines,
+    subtotal: invoice.subtotal,
+    amountPaid: invoice.amountPaid,
+    change: invoice.change,
+    vatPercentage: invoice.vatPercentage,
+    netAmount: invoice.netAmount,
+    vatAmount: invoice.vatAmount,
+    createdByName: invoice.createdByName,
+    createdAt: invoice.createdAt,
+  }
+}
+
+export function printSaleDocument(
+  document: PrintableDocument,
+  settings: DocumentHeaderSettings,
+  documentType: PrintDocumentType,
+): void {
+  const headerSettings = getHeaderSettings(settings, documentType)
   const headerLines =
-    Number(Boolean(settings.receiptMainText.trim())) +
-    (settings.receiptAddress.trim() ? 2 : 0) +
-    (settings.receiptContactNumber.trim() ? 2 : 0) +
-    (settings.receiptTin.trim() ? 2 : 0)
-  const pageHeightMm = Math.max(120, 60 + invoice.lines.length * 10 + headerLines * LINE_HEIGHT_MM)
+    2 +
+    Number(Boolean(headerSettings.receiptMainText.trim())) +
+    (headerSettings.receiptAddress.trim() ? 2 : 0) +
+    (headerSettings.receiptContactNumber.trim() ? 2 : 0) +
+    (headerSettings.receiptTin.trim() ? 2 : 0)
+  const pageHeightMm = Math.max(
+    120,
+    60 + document.lines.length * 10 + headerLines * LINE_HEIGHT_MM,
+  )
 
   const doc = new jsPDF({
     unit: 'mm',
@@ -123,38 +264,118 @@ export function printInvoice(invoice: Invoice, settings: InvoicePrintSettings): 
     y += LINE_HEIGHT_MM
   }
 
-  addCenteredBlock(settings.receiptMainText, 11, true)
-  addCenteredBlock(settings.receiptAddress)
-  addCenteredBlock(settings.receiptContactNumber)
-  if (settings.receiptTin.trim()) {
-    addCenteredBlock(`TIN: ${settings.receiptTin.trim()}`)
+  addCenteredBlock(getDocumentTitle(documentType), DOCUMENT_TITLE_FONT_SIZE, true)
+  y += 3
+  addCenteredBlock(headerSettings.receiptMainText, STORE_NAME_FONT_SIZE, true)
+  addCenteredBlock(headerSettings.receiptAddress)
+  addCenteredBlock(headerSettings.receiptContactNumber)
+  if (headerSettings.receiptTin.trim()) {
+    addCenteredBlock(`TIN: ${headerSettings.receiptTin.trim()}`)
   }
   y += 2
-  addRow('Date', formatInvoiceDate(invoice.createdAt))
-  addRow('Cashier', invoice.createdByName)
-  addRow('Invoice no.', invoice.invoiceNumber)
+  addRow('Date', formatInvoiceDate(document.createdAt))
+  addRow('Cashier', document.createdByName)
+  addRow(getDocumentNumberLabel(documentType), document.documentNumber)
   addDivider()
 
-  for (const line of invoice.lines) {
+  for (const line of document.lines) {
     addLeft(formatLineLabel(line), CONTENT_WIDTH_MM - VALUE_COLUMN_WIDTH_MM)
     addRight(formatInvoiceAmount(line.lineTotal))
   }
 
   addDivider()
-  addRow('Net amount', formatInvoiceAmount(invoice.netAmount))
-  addRow(`VAT (${invoice.vatPercentage}%)`, formatInvoiceAmount(invoice.vatAmount))
-  addRow('Total', formatInvoiceAmount(invoice.subtotal), true)
+  addRow('Net amount', formatInvoiceAmount(document.netAmount))
+  addRow(`VAT (${document.vatPercentage}%)`, formatInvoiceAmount(document.vatAmount))
+  addRow('Total', formatInvoiceAmount(document.subtotal), true)
   y += 1
-  addRow('Total paid', formatInvoiceAmount(invoice.amountPaid), true)
-  addRow('Change', formatInvoiceAmount(invoice.change))
+  addRow('Total paid', formatInvoiceAmount(document.amountPaid), true)
+  addRow('Change', formatInvoiceAmount(document.change))
   y += 2
-  addCenteredBlock(settings.receiptBottomText)
+  addCenteredBlock(getBottomText(settings, documentType))
 
   doc.autoPrint()
   const blobUrl = doc.output('bloburl')
   const printWindow = window.open(blobUrl, '_blank')
 
   if (!printWindow) {
-    doc.save(`invoice-${invoice.invoiceNumber}.pdf`)
+    doc.save(getPdfFilename(document, documentType))
   }
+}
+
+export function printInvoice(invoice: Invoice, settings: DocumentHeaderSettings): void {
+  printSaleDocument(buildPrintableDocumentFromInvoice(invoice), settings, 'invoice')
+}
+
+export function printOfficialReceipt(
+  document: PrintableDocument,
+  settings: DocumentHeaderSettings,
+): void {
+  printSaleDocument(document, settings, 'official_receipt')
+}
+
+export function printAcknowledgementReceipt(
+  document: PrintableDocument,
+  settings: DocumentHeaderSettings,
+): void {
+  printSaleDocument(document, settings, 'acknowledgement_receipt')
+}
+
+function formatSaleReferenceNumber(sale: Sale): string {
+  return sale.id.slice(0, 8).toUpperCase()
+}
+
+export async function autoPrintForCompletedSale(
+  sale: Sale,
+  settings: AppSettings,
+): Promise<void> {
+  switch (settings.autoPrint) {
+    case 'off':
+      return
+    case 'invoice': {
+      const invoice = await getOrCreateInvoiceForSale(sale)
+      printInvoice(invoice, settings)
+      return
+    }
+    case 'official_receipt': {
+      const document = buildPrintableDocumentFromSale(
+        sale,
+        settings,
+        formatSaleReferenceNumber(sale),
+      )
+      printOfficialReceipt(document, settings)
+      return
+    }
+    case 'acknowledgement_receipt': {
+      const document = buildPrintableDocumentFromSale(
+        sale,
+        settings,
+        formatSaleReferenceNumber(sale),
+      )
+      printAcknowledgementReceipt(document, settings)
+      return
+    }
+  }
+}
+
+export async function printSaleDocumentType(
+  sale: Sale,
+  settings: AppSettings,
+  documentType: PrintDocumentType,
+  invoice?: Invoice,
+): Promise<void> {
+  if (documentType === 'invoice') {
+    const resolvedInvoice = invoice ?? (await getOrCreateInvoiceForSale(sale))
+    printInvoice(resolvedInvoice, settings)
+    return
+  }
+
+  const documentNumber = invoice?.invoiceNumber ?? formatSaleReferenceNumber(sale)
+  const document = buildPrintableDocumentFromSale(sale, settings, documentNumber)
+
+  if (documentType === 'official_receipt') {
+    printOfficialReceipt(document, settings)
+    return
+  }
+
+  printAcknowledgementReceipt(document, settings)
 }

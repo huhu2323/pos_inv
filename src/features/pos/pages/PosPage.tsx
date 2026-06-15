@@ -8,9 +8,8 @@ import { PosPaymentPanel } from '@/features/pos/components/PosPaymentPanel'
 import { PosProductGrid } from '@/features/pos/components/PosProductGrid'
 import { usePosCart } from '@/features/pos/hooks/usePosCart'
 import { buildSellableItems, type PosSellableItem } from '@/features/pos/utils/posProducts'
-import { printInvoice } from '@/features/invoices/utils/printInvoice'
+import { autoPrintForCompletedSale } from '@/features/invoices/utils/printInvoice'
 import type { Product } from '@/lib/db/types'
-import { getOrCreateInvoiceForSale } from '@/lib/services/invoiceService'
 import { listActiveProducts } from '@/lib/services/productService'
 import { getSettings } from '@/lib/services/settingsService'
 import { createSale } from '@/lib/services/saleService'
@@ -112,10 +111,7 @@ export function PosPage() {
       )
 
       const settings = await getSettings()
-      if (settings.autoInvoice) {
-        const invoice = await getOrCreateInvoiceForSale(sale)
-        printInvoice(invoice, settings)
-      }
+      await autoPrintForCompletedSale(sale, settings)
 
       clearCart()
       setSaleComplete(true)

@@ -59,6 +59,15 @@ powershell -ExecutionPolicy Bypass -File scripts/release.ps1 -Version 1.0.4 -Ski
 - [ ] Working tree is clean (or you understand extra local changes)
 - [ ] `origin/main` is up to date (`git pull`)
 - [ ] Version format is `x.y.z` (example: `1.0.4`)
+- [ ] `CHANGELOG.md` has a finalized `## [x.y.z] - YYYY-MM-DD` section for the release version (move items out of `[Unreleased]` first)
+
+### Changelog workflow
+
+1. While building features, add bullets under `## [Unreleased]` in [`CHANGELOG.md`](../CHANGELOG.md).
+2. Before releasing, rename that content into a new version section, for example `## [1.0.6] - 2026-06-11`.
+3. Leave an empty `## [Unreleased]` section at the top for the next cycle.
+4. Commit `CHANGELOG.md` with the version bump. The release scripts refuse to run if the target version section is missing or empty.
+5. After CI finishes, confirm the [GitHub Release](https://github.com/huhu2323/pos_inv/releases) notes match `CHANGELOG.md` (CI reads the version section automatically).
 
 Recommended local check (the script can run this for you):
 

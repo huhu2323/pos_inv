@@ -1,13 +1,20 @@
 import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db/database'
-import type { AppSettings } from '@/lib/db/types'
+import type { AppSettings, AutoPrintMode } from '@/lib/db/types'
 
 const SETTINGS_ID = 'app' as const
 const BCRYPT_ROUNDS = 12
 
+const AUTO_PRINT_MODES: AutoPrintMode[] = [
+  'off',
+  'invoice',
+  'official_receipt',
+  'acknowledgement_receipt',
+]
+
 export type SettingsUpdateInput = {
   masterPassword?: string
-  autoInvoice: boolean
+  autoPrint: AutoPrintMode
   continuousBarcodeScanning: boolean
   vatPercentage: number
   receiptMainText: string
@@ -15,6 +22,11 @@ export type SettingsUpdateInput = {
   receiptContactNumber: string
   receiptTin: string
   receiptBottomText: string
+  officialReceiptMainText: string
+  officialReceiptAddress: string
+  officialReceiptContactNumber: string
+  officialReceiptTin: string
+  officialReceiptBottomText: string
 }
 
 function createDefaultSettings(): AppSettings {
@@ -22,7 +34,7 @@ function createDefaultSettings(): AppSettings {
   return {
     id: SETTINGS_ID,
     masterPasswordHash: '',
-    autoInvoice: false,
+    autoPrint: 'off',
     continuousBarcodeScanning: false,
     vatPercentage: 12,
     receiptMainText: 'Tofu POS',
@@ -30,20 +42,63 @@ function createDefaultSettings(): AppSettings {
     receiptContactNumber: '',
     receiptTin: '',
     receiptBottomText: 'Thank You',
+    officialReceiptMainText: 'Tofu POS',
+    officialReceiptAddress: '',
+    officialReceiptContactNumber: '',
+    officialReceiptTin: '',
+    officialReceiptBottomText: 'Thank You',
     invoiceNextNumber: 0,
     updatedAt: now,
   }
 }
 
-function normalizeSettings(settings: AppSettings & { directInvoice?: boolean }): AppSettings {
+function parseAutoPrint(value: unknown, legacyAutoInvoice?: unknown): AutoPrintMode {
+  if (typeof value === 'string' && AUTO_PRINT_MODES.includes(value as AutoPrintMode)) {
+    return value as AutoPrintMode
+  }
+
+  if (typeof legacyAutoInvoice === 'boolean') {
+    return legacyAutoInvoice ? 'invoice' : 'off'
+  }
+
+  return 'off'
+}
+
+function isSettingsComplete(
+  settings: AppSettings & { autoInvoice?: boolean; directInvoice?: boolean },
+): boolean {
+  return (
+    typeof settings.masterPasswordHash === 'string' &&
+    typeof settings.autoPrint === 'string' &&
+    typeof settings.continuousBarcodeScanning === 'boolean' &&
+    typeof settings.vatPercentage === 'number' &&
+    typeof settings.receiptMainText === 'string' &&
+    typeof settings.receiptAddress === 'string' &&
+    typeof settings.receiptContactNumber === 'string' &&
+    typeof settings.receiptTin === 'string' &&
+    typeof settings.receiptBottomText === 'string' &&
+    typeof settings.officialReceiptMainText === 'string' &&
+    typeof settings.officialReceiptAddress === 'string' &&
+    typeof settings.officialReceiptContactNumber === 'string' &&
+    typeof settings.officialReceiptTin === 'string' &&
+    typeof settings.officialReceiptBottomText === 'string' &&
+    typeof settings.invoiceNextNumber === 'number'
+  )
+}
+
+function normalizeSettings(
+  settings: AppSettings & { autoInvoice?: boolean; directInvoice?: boolean },
+): AppSettings {
+  const legacyAutoInvoice =
+    typeof settings.autoInvoice === 'boolean'
+      ? settings.autoInvoice
+      : typeof settings.directInvoice === 'boolean'
+        ? settings.directInvoice
+        : undefined
+
   return {
     ...settings,
-    autoInvoice:
-      typeof settings.autoInvoice === 'boolean'
-        ? settings.autoInvoice
-        : typeof settings.directInvoice === 'boolean'
-          ? settings.directInvoice
-          : false,
+    autoPrint: parseAutoPrint(settings.autoPrint, legacyAutoInvoice),
     continuousBarcodeScanning:
       typeof settings.continuousBarcodeScanning === 'boolean'
         ? settings.continuousBarcodeScanning
@@ -59,6 +114,24 @@ function normalizeSettings(settings: AppSettings & { directInvoice?: boolean }):
     receiptTin: typeof settings.receiptTin === 'string' ? settings.receiptTin : '',
     receiptBottomText:
       typeof settings.receiptBottomText === 'string' ? settings.receiptBottomText : 'Thank You',
+    officialReceiptMainText:
+      typeof settings.officialReceiptMainText === 'string'
+        ? settings.officialReceiptMainText
+        : 'Tofu POS',
+    officialReceiptAddress:
+      typeof settings.officialReceiptAddress === 'string'
+        ? settings.officialReceiptAddress
+        : '',
+    officialReceiptContactNumber:
+      typeof settings.officialReceiptContactNumber === 'string'
+        ? settings.officialReceiptContactNumber
+        : '',
+    officialReceiptTin:
+      typeof settings.officialReceiptTin === 'string' ? settings.officialReceiptTin : '',
+    officialReceiptBottomText:
+      typeof settings.officialReceiptBottomText === 'string'
+        ? settings.officialReceiptBottomText
+        : 'Thank You',
     invoiceNextNumber:
       typeof settings.invoiceNextNumber === 'number' ? settings.invoiceNextNumber : 0,
   }
@@ -68,14 +141,32 @@ async function hashMasterPassword(password: string): Promise<string> {
   return bcrypt.hash(password, BCRYPT_ROUNDS)
 }
 
+async function persistSettings(settings: AppSettings): Promise<AppSettings> {
+  await db.settings.put(settings)
+  return settings
+}
+
+export async function initializeSettings(masterPassword: string): Promise<AppSettings> {
+  const settings = createDefaultSettings()
+  settings.masterPasswordHash = await hashMasterPassword(masterPassword)
+  return persistSettings(settings)
+}
+
 export async function getSettings(): Promise<AppSettings> {
   const existing = await db.settings.get(SETTINGS_ID)
 
   if (!existing) {
-    return createDefaultSettings()
+    return persistSettings(createDefaultSettings())
   }
 
-  return normalizeSettings(existing)
+  if (isSettingsComplete(existing)) {
+    return existing
+  }
+
+  return persistSettings({
+    ...normalizeSettings(existing),
+    updatedAt: new Date(),
+  })
 }
 
 export async function updateSettings(input: SettingsUpdateInput): Promise<AppSettings> {
@@ -86,9 +177,13 @@ export async function updateSettings(input: SettingsUpdateInput): Promise<AppSet
     throw new Error('VAT percentage must be between 0 and 100')
   }
 
+  if (!AUTO_PRINT_MODES.includes(input.autoPrint)) {
+    throw new Error('Invalid auto print mode')
+  }
+
   const updated: AppSettings = {
     ...existing,
-    autoInvoice: input.autoInvoice,
+    autoPrint: input.autoPrint,
     continuousBarcodeScanning: input.continuousBarcodeScanning,
     vatPercentage: input.vatPercentage,
     receiptMainText: input.receiptMainText.trim(),
@@ -96,6 +191,11 @@ export async function updateSettings(input: SettingsUpdateInput): Promise<AppSet
     receiptContactNumber: input.receiptContactNumber.trim(),
     receiptTin: input.receiptTin.trim(),
     receiptBottomText: input.receiptBottomText.trim() || 'Thank You',
+    officialReceiptMainText: input.officialReceiptMainText.trim() || 'Tofu POS',
+    officialReceiptAddress: input.officialReceiptAddress.trim(),
+    officialReceiptContactNumber: input.officialReceiptContactNumber.trim(),
+    officialReceiptTin: input.officialReceiptTin.trim(),
+    officialReceiptBottomText: input.officialReceiptBottomText.trim() || 'Thank You',
     updatedAt: new Date(),
   }
 

@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  AutoPrintMode,
   DataArchive,
   InventoryLog,
   Invoice,
@@ -231,11 +232,33 @@ export function saleToValues(sale: Sale): unknown[] {
   ]
 }
 
+const AUTO_PRINT_MODES: AutoPrintMode[] = [
+  'off',
+  'invoice',
+  'official_receipt',
+  'acknowledgement_receipt',
+]
+
+function parseAutoPrint(
+  row: Record<string, unknown>,
+): AutoPrintMode {
+  const autoPrint = row.autoPrint
+  if (typeof autoPrint === 'string' && AUTO_PRINT_MODES.includes(autoPrint as AutoPrintMode)) {
+    return autoPrint as AutoPrintMode
+  }
+
+  if (Number(row.autoInvoice) === 1) {
+    return 'invoice'
+  }
+
+  return 'off'
+}
+
 export function rowToSettings(row: Record<string, unknown>): AppSettings {
   return {
     id: 'app',
     masterPasswordHash: String(row.masterPasswordHash),
-    autoInvoice: Number(row.autoInvoice) === 1,
+    autoPrint: parseAutoPrint(row),
     continuousBarcodeScanning: Number(row.continuousBarcodeScanning) === 1,
     vatPercentage: Number(row.vatPercentage),
     receiptMainText: String(row.receiptMainText),
@@ -243,6 +266,22 @@ export function rowToSettings(row: Record<string, unknown>): AppSettings {
     receiptContactNumber: String(row.receiptContactNumber),
     receiptTin: String(row.receiptTin),
     receiptBottomText: String(row.receiptBottomText),
+    officialReceiptMainText:
+      typeof row.officialReceiptMainText === 'string'
+        ? row.officialReceiptMainText
+        : 'Tofu POS',
+    officialReceiptAddress:
+      typeof row.officialReceiptAddress === 'string' ? row.officialReceiptAddress : '',
+    officialReceiptContactNumber:
+      typeof row.officialReceiptContactNumber === 'string'
+        ? row.officialReceiptContactNumber
+        : '',
+    officialReceiptTin:
+      typeof row.officialReceiptTin === 'string' ? row.officialReceiptTin : '',
+    officialReceiptBottomText:
+      typeof row.officialReceiptBottomText === 'string'
+        ? row.officialReceiptBottomText
+        : 'Thank You',
     invoiceNextNumber: Number(row.invoiceNextNumber),
     updatedAt: parseDate(row.updatedAt),
   }
@@ -252,7 +291,7 @@ export function settingsToValues(settings: AppSettings): unknown[] {
   return [
     settings.id,
     settings.masterPasswordHash,
-    settings.autoInvoice ? 1 : 0,
+    settings.autoPrint,
     settings.continuousBarcodeScanning ? 1 : 0,
     settings.vatPercentage,
     settings.receiptMainText,
@@ -260,6 +299,11 @@ export function settingsToValues(settings: AppSettings): unknown[] {
     settings.receiptContactNumber,
     settings.receiptTin,
     settings.receiptBottomText,
+    settings.officialReceiptMainText,
+    settings.officialReceiptAddress,
+    settings.officialReceiptContactNumber,
+    settings.officialReceiptTin,
+    settings.officialReceiptBottomText,
     settings.invoiceNextNumber,
     settings.updatedAt.toISOString(),
   ]
