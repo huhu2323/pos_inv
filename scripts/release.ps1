@@ -46,6 +46,19 @@ function Test-VersionFormat {
     }
 }
 
+function Test-Changelog {
+    param([string]$ReleaseVersion)
+
+    if (-not (Test-Path 'CHANGELOG.md')) {
+        throw 'CHANGELOG.md is required before releasing.'
+    }
+
+    node scripts/extract-changelog-notes.mjs $ReleaseVersion | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Update CHANGELOG.md with a non-empty ## [$ReleaseVersion] section before releasing."
+    }
+}
+
 function Confirm {
     param([string]$Prompt)
 
@@ -118,6 +131,7 @@ if (-not $Version) {
 }
 
 Test-VersionFormat $Version
+Test-Changelog $Version
 
 if ($Version -eq $currentVersion) {
     throw "Version is unchanged ($Version)."
@@ -160,7 +174,7 @@ if (-not (Confirm "Commit, push main, and push tag $tag?")) {
 }
 
 Set-PackageVersion $Version
-git add package.json
+git add package.json CHANGELOG.md
 git commit -m "Bump version to $Version."
 
 Write-Host ''

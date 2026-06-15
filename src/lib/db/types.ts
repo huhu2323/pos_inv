@@ -107,10 +107,14 @@ export interface Sale {
   createdAt: Date
 }
 
+export type AutoPrintMode = 'off' | 'invoice' | 'official_receipt' | 'acknowledgement_receipt'
+
+export type PrintDocumentType = 'invoice' | 'official_receipt' | 'acknowledgement_receipt'
+
 export interface AppSettings {
   id: 'app'
   masterPasswordHash: string
-  autoInvoice: boolean
+  autoPrint: AutoPrintMode
   continuousBarcodeScanning: boolean
   vatPercentage: number
   receiptMainText: string
@@ -118,6 +122,11 @@ export interface AppSettings {
   receiptContactNumber: string
   receiptTin: string
   receiptBottomText: string
+  officialReceiptMainText: string
+  officialReceiptAddress: string
+  officialReceiptContactNumber: string
+  officialReceiptTin: string
+  officialReceiptBottomText: string
   invoiceNextNumber: number
   updatedAt: Date
 }

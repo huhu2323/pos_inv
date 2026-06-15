@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS sales (
 CREATE TABLE IF NOT EXISTS settings (
   id TEXT PRIMARY KEY,
   masterPasswordHash TEXT NOT NULL,
-  autoInvoice INTEGER NOT NULL,
+  autoPrint TEXT NOT NULL DEFAULT 'off',
   continuousBarcodeScanning INTEGER NOT NULL,
   vatPercentage REAL NOT NULL,
   receiptMainText TEXT NOT NULL,
@@ -84,6 +84,11 @@ CREATE TABLE IF NOT EXISTS settings (
   receiptContactNumber TEXT NOT NULL,
   receiptTin TEXT NOT NULL,
   receiptBottomText TEXT NOT NULL,
+  officialReceiptMainText TEXT NOT NULL DEFAULT 'Tofu POS',
+  officialReceiptAddress TEXT NOT NULL DEFAULT '',
+  officialReceiptContactNumber TEXT NOT NULL DEFAULT '',
+  officialReceiptTin TEXT NOT NULL DEFAULT '',
+  officialReceiptBottomText TEXT NOT NULL DEFAULT 'Thank You',
   invoiceNextNumber INTEGER NOT NULL,
   updatedAt TEXT NOT NULL
 );

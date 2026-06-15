@@ -22,7 +22,7 @@ import {
 import { alpha } from '@mui/material/styles'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import type { Invoice, Sale } from '@/lib/db/types'
+import type { Invoice, PrintDocumentType, Sale } from '@/lib/db/types'
 import {
   createInvoiceForSale,
   listInvoices,
@@ -31,7 +31,7 @@ import { getSettings, verifyMasterPassword } from '@/lib/services/settingsServic
 import { listSales, voidSale } from '@/lib/services/saleService'
 import { formatCurrency } from '@/shared/utils/currency'
 import { formatDate } from '@/shared/utils/formatDate'
-import { printInvoice } from '@/features/invoices/utils/printInvoice'
+import { printInvoice, printSaleDocumentType } from '@/features/invoices/utils/printInvoice'
 
 function formatItemsSummary(sale: Sale, salesById: Map<string, Sale>): string {
   if (sale.type === 'void') {
@@ -98,7 +98,7 @@ export function SalesPage() {
   const [viewTarget, setViewTarget] = useState<Sale | null>(null)
   const [invoicesModalTarget, setInvoicesModalTarget] = useState<Sale | null>(null)
   const [invoiceRegenerateTarget, setInvoiceRegenerateTarget] = useState<Sale | null>(null)
-  const [invoicing, setInvoicing] = useState(false)
+  const [printing, setPrinting] = useState(false)
   const [voidTarget, setVoidTarget] = useState<Sale | null>(null)
   const [voiding, setVoiding] = useState(false)
   const [masterPassword, setMasterPassword] = useState('')
@@ -189,19 +189,9 @@ export function SalesPage() {
     setVoidDialogError(null)
   }
 
-  function handleInvoiceClick(sale: Sale) {
-    const saleInvoices = invoicesBySaleId.get(sale.id) ?? []
-    if (saleInvoices.length > 0) {
-      setInvoiceRegenerateTarget(sale)
-      return
-    }
-
-    void executeInvoice(sale)
-  }
-
-  async function executeInvoice(sale: Sale) {
+  async function executeRegenerateInvoice(sale: Sale) {
     setError(null)
-    setInvoicing(true)
+    setPrinting(true)
 
     try {
       const [settings, invoice] = await Promise.all([
@@ -214,8 +204,44 @@ export function SalesPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate invoice')
     } finally {
-      setInvoicing(false)
+      setPrinting(false)
     }
+  }
+
+  async function executePrint(sale: Sale, documentType: PrintDocumentType) {
+    setError(null)
+    setPrinting(true)
+
+    try {
+      const settings = await getSettings()
+      const existingInvoice = (invoicesBySaleId.get(sale.id) ?? [])[0]
+
+      if (documentType === 'invoice') {
+        const invoice = existingInvoice ?? (await createInvoiceForSale(sale))
+        await printSaleDocumentType(sale, settings, 'invoice', invoice)
+        setInvoiceRegenerateTarget(null)
+        await reloadSales()
+        return
+      }
+
+      await printSaleDocumentType(sale, settings, documentType, existingInvoice)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : `Failed to print ${documentType.replace(/_/g, ' ')}`,
+      )
+    } finally {
+      setPrinting(false)
+    }
+  }
+
+  function handleInvoiceClick(sale: Sale) {
+    const saleInvoices = invoicesBySaleId.get(sale.id) ?? []
+    if (saleInvoices.length > 0) {
+      setInvoiceRegenerateTarget(sale)
+      return
+    }
+
+    void executePrint(sale, 'invoice')
   }
 
   async function handlePrintInvoice(invoice: Invoice) {
@@ -388,10 +414,26 @@ export function SalesPage() {
                       <Button
                         size="small"
                         variant="outlined"
-                        disabled={!canInvoice(sale) || invoicing}
+                        disabled={!canInvoice(sale) || printing}
                         onClick={() => handleInvoiceClick(sale)}
                       >
                         Invoice
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        disabled={!canInvoice(sale) || printing}
+                        onClick={() => void executePrint(sale, 'official_receipt')}
+                      >
+                        OR
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        disabled={!canInvoice(sale) || printing}
+                        onClick={() => void executePrint(sale, 'acknowledgement_receipt')}
+                      >
+                        Ack. Receipt
                       </Button>
                       <Button
                         size="small"
@@ -554,7 +596,7 @@ export function SalesPage() {
 
       <Dialog
         open={Boolean(invoiceRegenerateTarget)}
-        onClose={() => !invoicing && setInvoiceRegenerateTarget(null)}
+        onClose={() => !printing && setInvoiceRegenerateTarget(null)}
       >
         <DialogTitle>Regenerate invoice?</DialogTitle>
         <DialogContent>
@@ -572,15 +614,17 @@ export function SalesPage() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setInvoiceRegenerateTarget(null)} disabled={invoicing}>
+          <Button onClick={() => setInvoiceRegenerateTarget(null)} disabled={printing}>
             Cancel
           </Button>
           <Button
             variant="contained"
-            onClick={() => invoiceRegenerateTarget && void executeInvoice(invoiceRegenerateTarget)}
-            disabled={invoicing}
+            onClick={() =>
+              invoiceRegenerateTarget && void executeRegenerateInvoice(invoiceRegenerateTarget)
+            }
+            disabled={printing}
           >
-            {invoicing ? 'Generating...' : 'Regenerate'}
+            {printing ? 'Generating...' : 'Regenerate'}
           </Button>
         </DialogActions>
       </Dialog>

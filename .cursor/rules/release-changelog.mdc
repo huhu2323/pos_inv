@@ -1,0 +1,56 @@
+---
+description: Document changes in CHANGELOG.md before release and publish notes to GitHub Releases
+alwaysApply: true
+---
+
+# Release changelog requirements
+
+Before running `scripts/release.sh` or `scripts/release.ps1`, every user-facing change since the last release must be documented.
+
+## When to write changelog entries
+
+Add entries under `## [Unreleased]` in `CHANGELOG.md` as features, fixes, or refactors land — not only at release time.
+
+Use these sections when they apply:
+
+- `Added` — new features or UI
+- `Changed` — behavior or UX updates
+- `Fixed` — bug fixes
+- `Removed` — deprecated or removed behavior
+
+Write short, user-facing bullets. Link issues or PRs only when helpful.
+
+## Before releasing
+
+1. Review `git log` and the working tree since the last tag.
+2. Move all `[Unreleased]` bullets into a new version section:
+
+   ```markdown
+   ## [1.0.6] - 2026-06-11
+
+   ### Added
+   - ...
+   ```
+
+3. Leave an empty `## [Unreleased]` section at the top.
+4. Commit `CHANGELOG.md` with the version bump (release scripts validate the version section exists).
+5. Run the release script only after the changelog is complete.
+
+## GitHub Releases
+
+Release notes on GitHub must match the new `CHANGELOG.md` section for that version. CI reads that section via `scripts/extract-changelog-notes.mjs` — do not rely on auto-generated notes alone.
+
+If a release already exists and notes need correction, edit them on GitHub to match `CHANGELOG.md`.
+
+## Agent checklist
+
+When implementing new features or fixes:
+
+- [ ] Add or update bullets under `[Unreleased]` in `CHANGELOG.md`
+- [ ] Update `docs/RELEASING.md` or feature docs only when release process or architecture changes
+
+When preparing a release:
+
+- [ ] Finalize the `## [x.y.z]` section in `CHANGELOG.md`
+- [ ] Confirm release scripts pass changelog validation
+- [ ] Verify the GitHub Release body matches the changelog after CI finishes

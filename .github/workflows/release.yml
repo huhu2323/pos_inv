@@ -85,6 +85,9 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Extract release notes
+        run: node scripts/extract-changelog-notes.mjs "${GITHUB_REF_NAME#v}" > release-notes.md
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -104,5 +107,5 @@ jobs:
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "${files[@]}" --clobber
           else
-            gh release create "$tag" "${files[@]}" --generate-notes --title "Tofu POS ${tag#v}"
+            gh release create "$tag" "${files[@]}" --notes-file release-notes.md --title "Tofu POS ${tag#v}"
           fi
