@@ -1,13 +1,15 @@
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
-import { Box, Button, IconButton, Paper, Stack, Typography } from '@mui/material'
+import BackspaceOutlinedIcon from '@mui/icons-material/BackspaceOutlined'
+import { ArrowForwardIcon } from '@/features/pos/components/PosHeader'
+import { Box, Button, Stack, Typography } from '@mui/material'
 import { formatCurrency } from '@/shared/utils/currency'
 import type { CartLine } from '@/features/pos/types'
 import {
   NUMPAD_KEYS,
   PH_BILLS,
+  displayPriceSx,
   touchButtonSx,
-  touchIconButtonSx,
 } from '@/features/pos/utils/posStyles'
+import { labelCapsSx } from '@/shared/theme/stitchStyles'
 
 interface PosPaymentPanelProps {
   cart: CartLine[]
@@ -70,99 +72,83 @@ export function PosPaymentPanel({
     onAmountPaidChange(Number.isInteger(next) ? String(next) : next.toFixed(2))
   }
 
+  const tenderDisplay = amountPaid === '' ? formatCurrency(0) : `₱${amountPaid}`
+
   return (
-    <Stack spacing={1.5}>
-      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Typography variant="subtitle1">Total</Typography>
-        <Typography variant="h5" color="primary" sx={{ fontWeight: 700 }}>
-          {formatCurrency(total)}
+    <Stack spacing={2} sx={{ height: '100%', p: 2 }}>
+      <Box
+        sx={{
+          bgcolor: '#1d3052',
+          color: '#edf0ff',
+          p: 3,
+          borderRadius: 2,
+          textAlign: 'right',
+        }}
+      >
+        <Typography sx={{ ...labelCapsSx, opacity: 0.7, mb: 1 }}>Amount tendered</Typography>
+        <Typography sx={{ ...displayPriceSx, fontSize: { xs: '2rem', md: '2.75rem' }, lineHeight: 1 }}>
+          {tenderDisplay}
         </Typography>
-      </Stack>
+      </Box>
 
-      <Box>
-        <Stack
-          direction="row"
-          sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            Amount paid
-          </Typography>
-          <IconButton aria-label="Backspace" onClick={onBackspace} sx={touchIconButtonSx}>
-            <DeleteOutlinedIcon />
-          </IconButton>
-        </Stack>
-        <Paper
-          variant="outlined"
-          sx={{
-            px: 2,
-            py: 2,
-            mb: 1.5,
-            textAlign: 'right',
-            fontSize: { xs: '1.75rem', md: '2rem' },
-            fontWeight: 700,
-            fontFamily: 'monospace',
-          }}
-        >
-          {amountPaid === '' ? formatCurrency(0) : `₱${amountPaid}`}
-        </Paper>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 1,
+          flex: 1,
+        }}
+      >
+        {NUMPAD_KEYS.map((key) => (
+          <Button
+            key={key}
+            variant={key === 'C' ? 'outlined' : 'contained'}
+            color={key === 'C' ? 'inherit' : 'primary'}
+            onClick={() => (key === 'C' ? onBackspace() : handleNumpad(key))}
+            sx={{
+              ...touchButtonSx,
+              minHeight: 64,
+              bgcolor: key === 'C' ? 'action.selected' : 'background.paper',
+              color: key === 'C' ? 'text.primary' : 'primary.main',
+              borderColor: 'divider',
+              boxShadow: key === 'C' ? 'none' : '0 1px 2px rgba(4,27,60,0.08)',
+              '&:hover': {
+                bgcolor: key === 'C' ? 'error.light' : 'primary.main',
+                color: key === 'C' ? 'error.dark' : 'primary.contrastText',
+              },
+            }}
+          >
+            {key === 'C' ? <BackspaceOutlinedIcon /> : key}
+          </Button>
+        ))}
+      </Box>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Quick bills
-        </Typography>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gap: 1,
-            mb: 1.5,
-          }}
-        >
-          {PH_BILLS.map((bill) => (
-            <Button
-              key={bill}
-              variant="outlined"
-              color="secondary"
-              onClick={() => handleAddBill(bill)}
-              sx={{
-                ...touchButtonSx,
-                minHeight: 52,
-                fontSize: '1rem',
-                px: 0.5,
-              }}
-            >
-              ₱{bill}
-            </Button>
-          ))}
-        </Box>
-
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 1,
-          }}
-        >
-          {NUMPAD_KEYS.map((key) => (
-            <Button
-              key={key}
-              variant={key === 'C' ? 'outlined' : 'contained'}
-              color={key === 'C' ? 'inherit' : 'primary'}
-              onClick={() => handleNumpad(key)}
-              sx={touchButtonSx}
-            >
-              {key}
-            </Button>
-          ))}
-        </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1 }}>
+        {PH_BILLS.map((bill) => (
+          <Button
+            key={bill}
+            variant="contained"
+            onClick={() => handleAddBill(bill)}
+            sx={{
+              py: 1.25,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              bgcolor: '#50dcff',
+              color: '#005f71',
+              '&:hover': { bgcolor: '#48d7f9' },
+            }}
+          >
+            ₱{bill}
+          </Button>
+        ))}
       </Box>
 
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        <Typography sx={labelCapsSx} color="text.secondary">
           Change
         </Typography>
         <Typography
-          variant="h3"
-          sx={{ fontWeight: 700, fontSize: { xs: '2rem', md: '2.5rem' } }}
+          sx={{ ...displayPriceSx, fontSize: '1.75rem' }}
           color={change < 0 ? 'error.main' : 'success.main'}
         >
           {change < 0 ? `-${formatCurrency(Math.abs(change))}` : formatCurrency(change)}
@@ -177,12 +163,21 @@ export function PosPaymentPanel({
 
       <Button
         variant="contained"
+        color="primary"
         size="large"
         disabled={!canComplete || completingSale}
         onClick={onCompleteSale}
-        sx={{ mt: 1, minHeight: 64, fontSize: '1.2rem', fontWeight: 700 }}
+        endIcon={<ArrowForwardIcon />}
+        sx={{
+          mt: 'auto',
+          minHeight: 80,
+          fontSize: '1.25rem',
+          fontWeight: 700,
+          borderRadius: 2,
+          boxShadow: '0 8px 24px rgba(0, 61, 155, 0.25)',
+        }}
       >
-        {completingSale ? 'Completing...' : 'Complete sale'}
+        {completingSale ? 'Completing...' : 'Complete order'}
       </Button>
     </Stack>
   )

@@ -16,6 +16,7 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { ThemeModeToggle } from '@/shared/theme/ThemeModeToggle'
+import { labelCapsSx, stitchCardSx } from '@/shared/theme/stitchStyles'
 
 export function LoginPage() {
   const { user, loading, needsSetup, login, setupAdmin } = useAuth()
@@ -76,6 +77,7 @@ export function LoginPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          bgcolor: 'background.default',
         }}
       >
         <CircularProgress />
@@ -87,145 +89,152 @@ export function LoginPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        position: 'relative',
-        background: (theme) =>
-          theme.palette.mode === 'light'
-            ? 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #e8f4fd 100%)'
-            : 'linear-gradient(135deg, #071422 0%, #0d2137 50%, #132a45 100%)',
-        py: 4,
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+        bgcolor: 'background.default',
       }}
     >
-      <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-        <ThemeModeToggle />
+      <Box
+        sx={{
+          display: { xs: 'none', md: 'flex' },
+          flexDirection: 'column',
+          justifyContent: 'center',
+          p: 6,
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+        }}
+      >
+        <PointOfSaleIcon sx={{ fontSize: 48, mb: 3 }} />
+        <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, maxWidth: 420 }}>
+          Unified POS Management
+        </Typography>
+        <Typography sx={{ opacity: 0.85, maxWidth: 420, lineHeight: 1.7 }}>
+          High-velocity transactional software built for speed, accuracy, and reliability during
+          long shifts.
+        </Typography>
       </Box>
-      <Container maxWidth="sm">
-        <Stack spacing={3} sx={{ mb: 3, alignItems: 'center' }}>
-          <Box
-            sx={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <PointOfSaleIcon fontSize="large" />
-          </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h4" gutterBottom>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', p: { xs: 3, md: 6 }, position: 'relative' }}>
+        <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+          <ThemeModeToggle />
+        </Box>
+
+        <Container maxWidth="sm" disableGutters>
+          <Stack spacing={1} sx={{ mb: 4 }}>
+            <Typography sx={labelCapsSx} color="primary.main">
               Tofu POS Terminal
+            </Typography>
+            <Typography variant="h4">
+              {needsSetup ? 'Initial setup' : 'Sign in'}
             </Typography>
             <Typography color="text.secondary">
               {needsSetup
-                ? 'Create the first admin account to secure this terminal'
-                : 'Sign in to access the dashboard'}
+                ? 'Create the first admin account to secure this terminal.'
+                : 'Access the dashboard and register.'}
             </Typography>
-          </Box>
-        </Stack>
+          </Stack>
 
-        <Card>
-          <CardContent sx={{ p: 4 }}>
-            <Stack direction="row" spacing={1} sx={{ mb: 3, alignItems: 'center' }}>
-              <LockOutlinedIcon color="primary" />
-              <Typography variant="h6">
-                {needsSetup ? 'Initial setup' : 'Login'}
-              </Typography>
-            </Stack>
+          <Card sx={stitchCardSx}>
+            <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+              <Stack direction="row" spacing={1} sx={{ mb: 3, alignItems: 'center' }}>
+                <LockOutlinedIcon color="primary" fontSize="small" />
+                <Typography variant="h6">
+                  {needsSetup ? 'Admin account' : 'Login'}
+                </Typography>
+              </Stack>
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
+              {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                  {error}
+                </Alert>
+              )}
 
-            {needsSetup ? (
-              <Box component="form" onSubmit={handleSetup} noValidate>
-                <Stack spacing={2.5}>
-                  <TextField
-                    label="Display name"
-                    value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    required
-                    fullWidth
-                    autoComplete="name"
-                  />
-                  <TextField
-                    label="Username"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    required
-                    fullWidth
-                    autoComplete="username"
-                  />
-                  <TextField
-                    label="Password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                    fullWidth
-                    autoComplete="new-password"
-                    helperText="Minimum 8 characters"
-                  />
-                  <TextField
-                    label="Confirm password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    required
-                    fullWidth
-                    autoComplete="new-password"
-                  />
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    size="large"
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Creating account...' : 'Create admin account'}
-                  </Button>
-                </Stack>
-              </Box>
-            ) : (
-              <Box component="form" onSubmit={handleLogin} noValidate>
-                <Stack spacing={2.5}>
-                  <TextField
-                    label="Username"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    required
-                    fullWidth
-                    autoComplete="username"
-                    autoFocus
-                  />
-                  <TextField
-                    label="Password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                    fullWidth
-                    autoComplete="current-password"
-                  />
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    size="large"
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Signing in...' : 'Sign in'}
-                  </Button>
-                </Stack>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
-      </Container>
+              {needsSetup ? (
+                <Box component="form" onSubmit={handleSetup} noValidate>
+                  <Stack spacing={2.5}>
+                    <TextField
+                      label="Display name"
+                      value={displayName}
+                      onChange={(event) => setDisplayName(event.target.value)}
+                      required
+                      fullWidth
+                      autoComplete="name"
+                    />
+                    <TextField
+                      label="Username"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      required
+                      fullWidth
+                      autoComplete="username"
+                    />
+                    <TextField
+                      label="Password"
+                      type="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
+                      fullWidth
+                      autoComplete="new-password"
+                      helperText="Minimum 8 characters"
+                    />
+                    <TextField
+                      label="Confirm password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                      required
+                      fullWidth
+                      autoComplete="new-password"
+                    />
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="secondary"
+                      size="large"
+                      disabled={submitting}
+                    >
+                      {submitting ? 'Creating account...' : 'Create admin account'}
+                    </Button>
+                  </Stack>
+                </Box>
+              ) : (
+                <Box component="form" onSubmit={handleLogin} noValidate>
+                  <Stack spacing={2.5}>
+                    <TextField
+                      label="Username"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      required
+                      fullWidth
+                      autoComplete="username"
+                      autoFocus
+                    />
+                    <TextField
+                      label="Password"
+                      type="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
+                      fullWidth
+                      autoComplete="current-password"
+                    />
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="secondary"
+                      size="large"
+                      disabled={submitting}
+                    >
+                      {submitting ? 'Signing in...' : 'Sign in'}
+                    </Button>
+                  </Stack>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Container>
+      </Box>
     </Box>
   )
 }

@@ -3,9 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
-  Paper,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -21,6 +18,10 @@ import { InventoryFormDialog } from '@/features/inventory/components/InventoryFo
 import type { InventoryLog, Product } from '@/lib/db/types'
 import { createInventoryLog, listInventoryLogs } from '@/lib/services/inventoryService'
 import { listProducts } from '@/lib/services/productService'
+import { PageHeader } from '@/shared/components/ui/PageHeader'
+import { DataTableCard } from '@/shared/components/ui/DataTableCard'
+import { StatusChip } from '@/shared/components/ui/StatusChip'
+import { stitchTableHeadSx } from '@/shared/theme/stitchStyles'
 import { formatDate } from '@/shared/utils/formatDate'
 
 function movementLabel(type: InventoryLog['type']): string {
@@ -99,28 +100,21 @@ export function InventoryPage() {
 
   return (
     <Box>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        sx={{ justifyContent: 'space-between', alignItems: { sm: 'center' }, mb: 3 }}
-      >
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Inventory
-          </Typography>
-          <Typography color="text.secondary">
-            Stock movement log for inbound deliveries and outbound removals.
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setFormOpen(true)}
-          disabled={products.length === 0}
-        >
-          New log
-        </Button>
-      </Stack>
+      <PageHeader
+        title="Inventory management"
+        subtitle="Stock movement log for inbound deliveries and outbound removals."
+        action={
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<AddIcon />}
+            onClick={() => setFormOpen(true)}
+            disabled={products.length === 0}
+          >
+            New log
+          </Button>
+        }
+      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -134,9 +128,10 @@ export function InventoryPage() {
         </Alert>
       )}
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
+      <DataTableCard title="Full inventory table">
+        <TableContainer>
+          <Table>
+            <TableHead sx={stitchTableHeadSx}>
             <TableRow>
               <TableCell>Date</TableCell>
               <TableCell>Type</TableCell>
@@ -178,10 +173,9 @@ export function InventoryPage() {
                 >
                   <TableCell>{formatDate(log.createdAt)}</TableCell>
                   <TableCell>
-                    <Chip
+                    <StatusChip
+                      status={log.type === 'inbound' ? 'success' : 'error'}
                       label={movementLabel(log.type)}
-                      color={log.type === 'inbound' ? 'success' : 'error'}
-                      size="small"
                     />
                   </TableCell>
                   <TableCell>{log.productName}</TableCell>
@@ -196,7 +190,8 @@ export function InventoryPage() {
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+        </TableContainer>
+      </DataTableCard>
 
       <InventoryFormDialog
         open={formOpen}

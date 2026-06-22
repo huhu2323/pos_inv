@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Full UI overhaul from Stitch mockups: sidebar shell with Store Manager branding, light top header, cart-table POS layout with payment panel, dashboard metric cards and recent transactions, and consistent table/card patterns across admin pages.
+- UI refreshed with the Stitch "Precision POS" design system: deep blue primary, cyan CTAs, green complete-sale actions, Inter/Hanken Grotesk/JetBrains Mono typography, bordered cards, and 280px sidebar.
 - Invoices sidebar menu replaced with Receipts, showing all document types in one place.
 - Sync button in Settings now pushes only new records, matched by local UUID.
 - Official Receipt and Acknowledgement Receipt print formats.

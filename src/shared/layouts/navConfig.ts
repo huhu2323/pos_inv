@@ -27,5 +27,5 @@ export const NAV_ITEMS: NavItem[] = [
 ]
 
 export const SIDEBAR_COLLAPSED_KEY = 'tofu_sidebar_collapsed'
-export const DRAWER_WIDTH = 260
+export const DRAWER_WIDTH = 280
 export const DRAWER_COLLAPSED_WIDTH = 76

@@ -1,11 +1,17 @@
-import { Alert, Box, Divider, Paper, Snackbar } from '@mui/material'
+import GridViewIcon from '@mui/icons-material/GridView'
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
+import SearchIcon from '@mui/icons-material/Search'
+import { Alert, Box, Button, Snackbar, Stack, TextField, Typography } from '@mui/material'
+import InputAdornment from '@mui/material/InputAdornment'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { PosCartPanel } from '@/features/pos/components/PosCartPanel'
+import { PosBarcodeDialog } from '@/features/pos/components/PosBarcodeDialog'
+import { PosCartPanel, PosCartTotals } from '@/features/pos/components/PosCartPanel'
 import { PosHeader } from '@/features/pos/components/PosHeader'
 import { PosPaymentPanel } from '@/features/pos/components/PosPaymentPanel'
 import { PosProductGrid } from '@/features/pos/components/PosProductGrid'
+import { PosSearchDialog } from '@/features/pos/components/PosSearchDialog'
 import { usePosCart } from '@/features/pos/hooks/usePosCart'
 import { buildSellableItems, type PosSellableItem } from '@/features/pos/utils/posProducts'
 import { autoPrintForCompletedSale } from '@/features/invoices/utils/printInvoice'
@@ -13,6 +19,8 @@ import type { Product } from '@/lib/db/types'
 import { listActiveProducts } from '@/lib/services/productService'
 import { getSettings } from '@/lib/services/settingsService'
 import { createSale } from '@/lib/services/saleService'
+import { stitchDesignTokens } from '@/shared/theme/stitchDesignTokens'
+import { labelCapsSx } from '@/shared/theme/stitchStyles'
 
 export function PosPage() {
   const navigate = useNavigate()
@@ -25,6 +33,7 @@ export function PosPage() {
   const [completingSale, setCompletingSale] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [barcodeOpen, setBarcodeOpen] = useState(false)
+  const [browseOpen, setBrowseOpen] = useState(false)
   const [continuousBarcodeScanning, setContinuousBarcodeScanning] = useState(false)
 
   const {
@@ -42,6 +51,7 @@ export function PosPage() {
   } = usePosCart()
 
   const sellableItems = useMemo(() => buildSellableItems(products), [products])
+  const subtotal = total
 
   useEffect(() => {
     let active = true
@@ -76,6 +86,7 @@ export function PosPage() {
 
   function handleSellableClick(item: PosSellableItem) {
     addToCart(item.product, item.price, item.variant)
+    setBrowseOpen(false)
   }
 
   function handleSearchSelect(item: PosSellableItem) {
@@ -132,61 +143,113 @@ export function PosPage() {
         bgcolor: 'background.default',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
       <PosHeader user={user} onExit={() => navigate('/dashboard')} />
 
       {error && (
-        <Alert severity="error" sx={{ mx: 2, mt: 2 }}>
+        <Alert severity="error" sx={{ mx: 2, mt: 1 }}>
           {error}
         </Alert>
       )}
 
-      <Box
-        sx={{
-          flex: 1,
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: '1fr minmax(400px, 44%)' },
-          gap: 2,
-          p: { xs: 2, md: 3 },
-          minHeight: 0,
-          overflow: 'hidden',
-        }}
-      >
-        <PosProductGrid
-          loading={loading}
-          sellableItems={sellableItems}
-          products={products}
-          continuousBarcodeScanning={continuousBarcodeScanning}
-          searchOpen={searchOpen}
-          barcodeOpen={barcodeOpen}
-          onSearchOpen={() => setSearchOpen(true)}
-          onSearchClose={() => setSearchOpen(false)}
-          onBarcodeOpen={() => setBarcodeOpen(true)}
-          onBarcodeClose={() => setBarcodeOpen(false)}
-          onItemClick={handleSellableClick}
-          onSearchSelect={handleSearchSelect}
-          onBarcodeSelect={handleSellableClick}
-        />
-
-        <Paper
+      <Box sx={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
+        {/* Left: cart / browse workspace */}
+        <Box
           sx={{
-            p: 2,
+            flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            minHeight: 0,
-            overflow: 'hidden',
+            minWidth: 0,
+            borderRight: 1,
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
           }}
         >
-          <PosCartPanel
-            cart={cart}
-            onUpdateQuantity={updateQuantity}
-            onRemoveLine={removeLine}
-            onClearCart={clearCart}
-          />
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography sx={{ ...labelCapsSx, color: 'text.secondary', mb: 1 }}>
+              Barcode scan
+            </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <TextField
+                fullWidth
+                placeholder="Scan item or type barcode..."
+                onClick={() => setBarcodeOpen(true)}
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <QrCodeScannerIcon color="action" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{ '& .MuiOutlinedInput-root': { minHeight: 48 } }}
+              />
+              <Button
+                variant="outlined"
+                startIcon={<SearchIcon />}
+                onClick={() => setSearchOpen(true)}
+                sx={{ minHeight: 48, whiteSpace: 'nowrap' }}
+              >
+                Search
+              </Button>
+              <Button
+                variant={browseOpen ? 'contained' : 'outlined'}
+                color={browseOpen ? 'primary' : 'inherit'}
+                startIcon={<GridViewIcon />}
+                onClick={() => setBrowseOpen((v) => !v)}
+                sx={{ minHeight: 48, whiteSpace: 'nowrap' }}
+              >
+                Browse
+              </Button>
+              {cart.length > 0 && (
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={clearCart}
+                  sx={{ minHeight: 48, whiteSpace: 'nowrap' }}
+                >
+                  Clear
+                </Button>
+              )}
+            </Stack>
+          </Box>
 
-          <Divider sx={{ mb: 2 }} />
+          <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+            {browseOpen ? (
+              <PosProductGrid
+                loading={loading}
+                sellableItems={sellableItems}
+                embedded
+                onItemClick={handleSellableClick}
+              />
+            ) : (
+              <PosCartPanel
+                cart={cart}
+                onUpdateQuantity={updateQuantity}
+                onRemoveLine={removeLine}
+              />
+            )}
+          </Box>
 
+          {!browseOpen && cart.length > 0 && <PosCartTotals subtotal={subtotal} total={total} />}
+        </Box>
+
+        {/* Right: payment panel */}
+        <Box
+          sx={{
+            width: { xs: '100%', md: stitchDesignTokens.layout.cartSummaryWidth },
+            maxWidth: stitchDesignTokens.layout.cartSummaryWidth,
+            display: { xs: cart.length > 0 ? 'flex' : 'none', md: 'flex' },
+            flexDirection: 'column',
+            bgcolor: 'background.default',
+            boxShadow: { md: '-8px 0 24px rgba(4, 27, 60, 0.08)' },
+            zIndex: 1,
+          }}
+        >
           <PosPaymentPanel
             cart={cart}
             total={total}
@@ -199,8 +262,23 @@ export function PosPage() {
             onBackspace={() => setAmountPaid((current) => current.slice(0, -1))}
             onCompleteSale={() => void handleCompleteSale()}
           />
-        </Paper>
+        </Box>
       </Box>
+
+      <PosSearchDialog
+        open={searchOpen}
+        items={sellableItems}
+        onClose={() => setSearchOpen(false)}
+        onSelectItem={handleSearchSelect}
+      />
+
+      <PosBarcodeDialog
+        open={barcodeOpen}
+        products={products}
+        continuousBarcodeScanning={continuousBarcodeScanning}
+        onClose={() => setBarcodeOpen(false)}
+        onSelectItem={handleSellableClick}
+      />
 
       <Snackbar
         open={saleComplete}

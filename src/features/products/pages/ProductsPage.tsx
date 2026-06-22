@@ -13,7 +13,6 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
-  Paper,
   Stack,
   Switch,
   Table,
@@ -38,6 +37,10 @@ import {
   updateProduct,
   type ProductInput,
 } from '@/lib/services/productService'
+import { PageHeader } from '@/shared/components/ui/PageHeader'
+import { DataTableCard } from '@/shared/components/ui/DataTableCard'
+import { monoFontFamily } from '@/shared/theme/stitchDesignTokens'
+import { stitchTableHeadSx } from '@/shared/theme/stitchStyles'
 import { formatCurrency } from '@/shared/utils/currency'
 
 export function ProductsPage() {
@@ -160,23 +163,15 @@ export function ProductsPage() {
 
   return (
     <Box>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        sx={{ justifyContent: 'space-between', alignItems: { sm: 'center' }, mb: 3 }}
-      >
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Products
-          </Typography>
-          <Typography color="text.secondary">
-            Manage menu items, pricing, and variants for the POS terminal.
-          </Typography>
-        </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateDialog}>
-          Add product
-        </Button>
-      </Stack>
+      <PageHeader
+        title="Product inventory"
+        subtitle="Manage your catalog, stock levels, and pricing details."
+        action={
+          <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={openCreateDialog}>
+            Add product
+          </Button>
+        }
+      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -184,9 +179,10 @@ export function ProductsPage() {
         </Alert>
       )}
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
+      <DataTableCard title="All products">
+        <TableContainer>
+          <Table>
+            <TableHead sx={stitchTableHeadSx}>
             <TableRow>
               <TableCell>Image</TableCell>
               <TableCell>Barcode</TableCell>
@@ -224,7 +220,7 @@ export function ProductsPage() {
                       sx={{ width: 40, height: 40 }}
                     />
                   </TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace' }}>
+                  <TableCell sx={{ fontFamily: monoFontFamily }}>
                     {product.barcode || '—'}
                   </TableCell>
                   <TableCell>{product.name}</TableCell>
@@ -289,7 +285,8 @@ export function ProductsPage() {
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+        </TableContainer>
+      </DataTableCard>
 
       <ProductFormDialog
         open={formOpen}

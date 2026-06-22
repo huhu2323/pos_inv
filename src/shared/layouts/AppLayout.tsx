@@ -3,18 +3,18 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale'
+import SearchIcon from '@mui/icons-material/Search'
 import {
-  AppBar,
   Box,
   Button,
-  Divider,
   Drawer,
   IconButton,
+  InputAdornment,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Toolbar,
+  TextField,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -24,6 +24,7 @@ import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { ThemeModeToggle } from '@/shared/theme/ThemeModeToggle'
+import { stitchHeaderBarSx, stitchNavItemSx } from '@/shared/theme/stitchStyles'
 import {
   DRAWER_COLLAPSED_WIDTH,
   DRAWER_WIDTH,
@@ -49,6 +50,7 @@ export function AppLayout() {
   const visibleNavItems = NAV_ITEMS.filter(
     (item) => !item.adminOnly || user?.role === 'admin',
   )
+  const currentPage = visibleNavItems.find((item) => item.path === location.pathname)
 
   async function handleLogout() {
     await logout()
@@ -71,25 +73,23 @@ export function AppLayout() {
   }
 
   const drawer = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Toolbar
-        sx={{
-          px: isCollapsedDesktop ? 1.5 : 2.5,
-          justifyContent: isCollapsedDesktop ? 'center' : 'flex-start',
-          minHeight: { xs: 56, sm: 64 },
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
-          <PointOfSaleIcon color="primary" sx={{ mr: isCollapsedDesktop ? 0 : 1.5 }} />
-          {!isCollapsedDesktop && (
-            <Typography variant="h6" noWrap>
-              Tofu POS
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', py: 3, px: 2 }}>
+      <Box sx={{ mb: 4, px: isCollapsedDesktop ? 0.5 : 1, textAlign: isCollapsedDesktop ? 'center' : 'left' }}>
+        {!isCollapsedDesktop ? (
+          <>
+            <Typography variant="h6" color="primary.main" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+              Store Manager
             </Typography>
-          )}
-        </Box>
-      </Toolbar>
-      <Divider />
-      <List sx={{ px: 1.5, py: 2, flexGrow: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.85 }}>
+              Tofu POS Terminal
+            </Typography>
+          </>
+        ) : (
+          <PointOfSaleIcon color="primary" sx={{ fontSize: 28 }} />
+        )}
+      </Box>
+
+      <List sx={{ flexGrow: 1, px: 0 }}>
         {visibleNavItems.map((item) => {
           const Icon = item.icon
           const selected = location.pathname === item.path
@@ -99,22 +99,25 @@ export function AppLayout() {
               key={item.path}
               selected={selected}
               onClick={() => handleNavigate(item.path)}
-              sx={{
-                borderRadius: 2,
-                mb: 0.5,
-                justifyContent: isCollapsedDesktop ? 'center' : 'flex-start',
-                px: isCollapsedDesktop ? 1 : 2,
-              }}
+              sx={stitchNavItemSx(selected)}
             >
               <ListItemIcon
                 sx={{
                   minWidth: isCollapsedDesktop ? 0 : 40,
                   justifyContent: 'center',
+                  color: selected ? 'primary.main' : 'inherit',
                 }}
               >
-                <Icon color={selected ? 'primary' : 'inherit'} />
+                <Icon fontSize="small" />
               </ListItemIcon>
-              {!isCollapsedDesktop && <ListItemText primary={item.label} />}
+              {!isCollapsedDesktop && (
+                <ListItemText
+                  primary={item.label}
+                  slotProps={{
+                    primary: { sx: { fontWeight: selected ? 700 : 500, fontSize: '0.95rem' } },
+                  }}
+                />
+              )}
             </ListItemButton>
           )
 
@@ -127,20 +130,51 @@ export function AppLayout() {
           )
         })}
       </List>
-      <Box sx={{ px: isCollapsedDesktop ? 1 : 2, pb: 1 }}>
+
+      <Box sx={{ mt: 'auto', pt: 3, borderTop: 1, borderColor: 'divider' }}>
+        {!isCollapsedDesktop ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1, mb: 2 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                flexShrink: 0,
+              }}
+            >
+              {user?.displayName?.charAt(0).toUpperCase()}
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
+                {user?.displayName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                {user?.role} access
+              </Typography>
+            </Box>
+          </Box>
+        ) : null}
+
         {isCollapsedDesktop ? (
           <Tooltip title="Start POS" placement="right">
             <IconButton
-              color="primary"
+              color="secondary"
               onClick={() => handleNavigate('/pos')}
               aria-label="Start POS"
               sx={{
                 width: '100%',
                 borderRadius: 2,
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
+                bgcolor: 'secondary.main',
+                color: 'secondary.contrastText',
                 py: 1.5,
-                '&:hover': { bgcolor: 'primary.dark' },
+                '&:hover': { bgcolor: 'secondary.dark' },
               }}
             >
               <PointOfSaleIcon />
@@ -149,112 +183,28 @@ export function AppLayout() {
         ) : (
           <Button
             variant="contained"
+            color="secondary"
             size="large"
             fullWidth
             startIcon={<PointOfSaleIcon />}
             onClick={() => handleNavigate('/pos')}
-            sx={{ py: 1.5, fontSize: '1rem' }}
+            sx={{ py: 1.5, borderRadius: 2, boxShadow: 2 }}
           >
             Start POS
           </Button>
         )}
       </Box>
-      <Divider />
-      {!isCollapsedDesktop ? (
-        <Box sx={{ p: 2 }}>
-          <Typography variant="body2" color="text.secondary" noWrap>
-            {user?.displayName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {user?.role}
-          </Typography>
-        </Box>
-      ) : (
-        <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'center' }}>
-          <Tooltip title={`${user?.displayName} (${user?.role})`} placement="right">
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-              }}
-            >
-              {user?.displayName?.charAt(0).toUpperCase()}
-            </Box>
-          </Tooltip>
-        </Box>
-      )}
     </Box>
   )
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <AppBar
-        position="fixed"
-        elevation={0}
-        color="primary"
-        sx={{
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-        }}
-      >
-        <Toolbar>
-          {isMobile ? (
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={() => setMobileOpen(true)}
-              sx={{ mr: 1 }}
-              aria-label="Open navigation"
-            >
-              <MenuIcon />
-            </IconButton>
-          ) : (
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={toggleCollapsed}
-              sx={{ mr: 1 }}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-            </IconButton>
-          )}
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            {visibleNavItems.find((item) => item.path === location.pathname)?.label ?? 'Tofu POS'}
-          </Typography>
-          <ThemeModeToggle color="inherit" />
-          <Button
-            color="inherit"
-            startIcon={<LogoutIcon />}
-            onClick={() => void handleLogout()}
-            sx={{ ml: 1 }}
-          >
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
-
       <Box
         component="nav"
         sx={{
           width: { md: drawerWidth },
           flexShrink: { md: 0 },
-          transition: theme.transitions.create('width', {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
+          transition: theme.transitions.create('width'),
         }}
       >
         <Drawer
@@ -264,10 +214,7 @@ export function AppLayout() {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': {
-              width: DRAWER_WIDTH,
-              boxSizing: 'border-box',
-            },
+            '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' },
           }}
         >
           {drawer}
@@ -281,10 +228,8 @@ export function AppLayout() {
               width: drawerWidth,
               boxSizing: 'border-box',
               overflowX: 'hidden',
-              transition: theme.transitions.create('width', {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.leavingScreen,
-              }),
+              transition: theme.transitions.create('width'),
+              bgcolor: 'background.paper',
             },
           }}
         >
@@ -292,20 +237,88 @@ export function AppLayout() {
         </Drawer>
       </Box>
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          p: { xs: 2, md: 3 },
-          pt: { xs: 10, md: 11 },
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-        }}
-      >
-        <Outlet />
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <Box component="header" sx={stitchHeaderBarSx}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
+            {isMobile ? (
+              <IconButton edge="start" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
+                <MenuIcon />
+              </IconButton>
+            ) : (
+              <IconButton
+                edge="start"
+                onClick={toggleCollapsed}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+              </IconButton>
+            )}
+            <Typography variant="h6" color="primary.main" sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>
+              Tofu POS
+            </Typography>
+            <TextField
+              size="small"
+              placeholder="Search orders, products..."
+              sx={{
+                display: { xs: 'none', lg: 'block' },
+                ml: 2,
+                maxWidth: 320,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 999,
+                  bgcolor: 'action.hover',
+                  '& fieldset': { border: 'none' },
+                },
+              }}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            {currentPage && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ display: { xs: 'none', md: 'block' }, ml: 1 }}
+              >
+                / {currentPage.label}
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ThemeModeToggle />
+            <Button
+              color="inherit"
+              startIcon={<LogoutIcon />}
+              onClick={() => void handleLogout()}
+              sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'inline-flex' } }}
+            >
+              Logout
+            </Button>
+            <IconButton
+              onClick={() => void handleLogout()}
+              aria-label="Logout"
+              sx={{ display: { xs: 'inline-flex', sm: 'none' }, color: 'text.secondary' }}
+            >
+              <LogoutIcon />
+            </IconButton>
+          </Box>
+        </Box>
+
+        <Box
+          component="main"
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+            p: { xs: 2, md: 3 },
+          }}
+        >
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   )

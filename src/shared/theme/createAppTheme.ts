@@ -1,64 +1,175 @@
 import { createTheme, type PaletteMode } from '@mui/material/styles'
+import { stitchDesignTokens } from '@/shared/theme/stitchDesignTokens'
 
 export function createAppTheme(mode: PaletteMode) {
+  const tokens = mode === 'light' ? stitchDesignTokens.light : stitchDesignTokens.dark
+  const { fonts, shape } = stitchDesignTokens
+
   return createTheme({
     palette: {
       mode,
-      primary: {
-        main: mode === 'light' ? '#1565c0' : '#42a5f5',
-        dark: mode === 'light' ? '#0d47a1' : '#1976d2',
-        light: mode === 'light' ? '#42a5f5' : '#90caf9',
-        contrastText: '#ffffff',
-      },
-      secondary: {
-        main: mode === 'light' ? '#0288d1' : '#4fc3f7',
-        dark: mode === 'light' ? '#01579b' : '#29b6f6',
-        light: mode === 'light' ? '#4fc3f7' : '#81d4fa',
-      },
-      background: {
-        default: mode === 'light' ? '#f0f4f8' : '#0a1628',
-        paper: mode === 'light' ? '#ffffff' : '#132337',
+      primary: tokens.primary,
+      secondary: tokens.secondary,
+      success: tokens.success,
+      error: tokens.error,
+      warning: tokens.warning,
+      background: tokens.background,
+      text: tokens.text,
+      divider: tokens.divider,
+      action: {
+        hover:
+          mode === 'light' ? 'rgba(0, 61, 155, 0.04)' : 'rgba(178, 197, 255, 0.08)',
+        selected:
+          mode === 'light' ? tokens.surface.containerHigh : tokens.surface.containerHigh,
       },
     },
     typography: {
-      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-      h4: {
+      fontFamily: fonts.body,
+      h3: {
+        fontFamily: fonts.headline,
         fontWeight: 700,
+        letterSpacing: '-0.02em',
+      },
+      h4: {
+        fontFamily: fonts.headline,
+        fontWeight: 600,
+        fontSize: '2rem',
+        lineHeight: 1.25,
       },
       h5: {
+        fontFamily: fonts.headline,
+        fontWeight: 600,
+      },
+      h6: {
+        fontFamily: fonts.headline,
+        fontWeight: 600,
+      },
+      subtitle1: {
+        fontFamily: fonts.headline,
+        fontWeight: 600,
+      },
+      button: {
+        fontFamily: fonts.body,
         fontWeight: 600,
       },
     },
     shape: {
-      borderRadius: 10,
+      borderRadius: shape.borderRadius,
     },
     components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            backgroundColor: tokens.background.default,
+          },
+          '*::-webkit-scrollbar': {
+            width: 6,
+            height: 6,
+          },
+          '*::-webkit-scrollbar-thumb': {
+            backgroundColor: tokens.divider,
+            borderRadius: 10,
+          },
+          '*::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent',
+          },
+        },
+      },
       MuiButton: {
         styleOverrides: {
           root: {
             textTransform: 'none',
             fontWeight: 600,
+            minHeight: stitchDesignTokens.layout.touchTargetMin,
+            borderRadius: shape.borderRadius,
+          },
+          sizeLarge: {
+            minHeight: stitchDesignTokens.layout.touchTargetMin,
+            borderRadius: shape.borderRadiusLg,
+          },
+        },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: shape.borderRadius,
           },
         },
       },
       MuiCard: {
         styleOverrides: {
-          root: ({ theme }) => ({
-            boxShadow:
-              theme.palette.mode === 'light'
-                ? '0 8px 24px rgba(21, 101, 192, 0.1)'
-                : '0 8px 24px rgba(0, 0, 0, 0.35)',
-          }),
+          root: {
+            borderRadius: shape.borderRadiusLg,
+            border: `1px solid ${tokens.divider}`,
+            boxShadow: '0 1px 2px rgba(4, 27, 60, 0.06)',
+            backgroundImage: 'none',
+          },
         },
       },
-      MuiAppBar: {
+      MuiPaper: {
         styleOverrides: {
-          root: ({ theme }) => ({
-            background:
-              theme.palette.mode === 'light'
-                ? 'linear-gradient(90deg, #1565c0 0%, #1976d2 100%)'
-                : 'linear-gradient(90deg, #0d47a1 0%, #1565c0 100%)',
-          }),
+          root: {
+            backgroundImage: 'none',
+          },
+          outlined: {
+            borderColor: tokens.divider,
+          },
+        },
+      },
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            borderRight: `1px solid ${tokens.divider}`,
+          },
+        },
+      },
+      MuiListItemButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: shape.borderRadius,
+          },
+        },
+      },
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-root': {
+              borderRadius: shape.borderRadius,
+            },
+          },
+        },
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            borderRadius: 999,
+            fontWeight: 600,
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          head: {
+            fontWeight: 700,
+            fontSize: '0.75rem',
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            color: tokens.text.secondary,
+            bgcolor: tokens.surface.containerHigh,
+            borderBottom: `1px solid ${tokens.divider}`,
+          },
+          root: {
+            borderBottom: `1px solid ${tokens.divider}`,
+          },
+        },
+      },
+      MuiTableRow: {
+        styleOverrides: {
+          root: {
+            '&:hover': {
+              bgcolor: mode === 'light' ? '#f1f3ff' : tokens.surface.container,
+            },
+          },
         },
       },
     },
