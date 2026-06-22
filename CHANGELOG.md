@@ -51,3 +51,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changes
 
 - Added server sync functionalities
+
+## [1.0.11] - 2026-06-15
+
+### Changes
+
+- UI updates
