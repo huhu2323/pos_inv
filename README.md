@@ -419,12 +419,21 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full frontend architect
 Screenshots in `docs/screenshots/` can be refreshed after UI changes:
 
 ```bash
+npm run screenshots
+```
+
+This builds the app, starts a preview server automatically, and saves PNGs to `docs/screenshots/`. Run `npx playwright install chromium` once if browsers are not installed.
+
+To manage the preview server yourself instead:
+
+```bash
 npm run build
-npx vite preview --port 4173 --strictPort &
+npx vite preview --port 4173 --strictPort
+# in another terminal:
 node scripts/capture-screenshots.mjs
 ```
 
-Requires Playwright (`npm install -D playwright` — already in devDependencies) and a running preview server. Run `npx playwright install chromium` once if browsers are not installed.
+Set `SCREENSHOT_AUTO_PREVIEW=0` when a preview server is already running. If port 4173 is stuck, free it with `lsof -ti :4173 | xargs kill`.
 
 ---
 
