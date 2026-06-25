@@ -24,6 +24,7 @@ import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { ThemeModeToggle } from '@/shared/theme/ThemeModeToggle'
+import { LowStockAlertNotifier } from '@/shared/components/LowStockAlertNotifier'
 import { stitchHeaderBarSx, stitchNavItemSx } from '@/shared/theme/stitchStyles'
 import {
   DRAWER_COLLAPSED_WIDTH,
@@ -290,6 +291,7 @@ export function AppLayout() {
             )}
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LowStockAlertNotifier />
             <ThemeModeToggle />
             <Button
               color="inherit"

@@ -14,6 +14,10 @@ import {
 } from '@mui/material'
 import type { Product } from '@/lib/db/types'
 import { formatCurrency } from '@/shared/utils/currency'
+import {
+  formatQtyWithUnit,
+  PRODUCT_UNIT_LABELS,
+} from '@/shared/utils/productUnitOfMeasure'
 import { ZoomableImage } from './ZoomableImage'
 
 interface ProductDetailDialogProps {
@@ -76,6 +80,18 @@ export function ProductDetailDialog({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <DetailField label="Default price" value={formatCurrency(product.defaultPrice)} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <DetailField
+                label="Quantity"
+                value={formatQtyWithUnit(product.qty, product.unitOfMeasure)}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <DetailField
+                label="Unit of measure"
+                value={PRODUCT_UNIT_LABELS[product.unitOfMeasure]}
+              />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <DetailField label="Name" value={product.name} />

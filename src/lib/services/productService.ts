@@ -1,5 +1,12 @@
 import { db } from '@/lib/db/database'
 import type { Product, ProductVariant } from '@/lib/db/types'
+import { DEFAULT_PRODUCT_UNIT_OF_MEASURE } from '@/shared/utils/productUnitOfMeasure'
+import {
+  DEFAULT_LOW_STOCK_ALERT_MODE,
+  normalizeProductVariant,
+  resolveStockAlertFields,
+  validateLowStockAlert,
+} from '@/shared/utils/lowStockAlert'
 import { deleteStoredImage } from './imageStorage'
 
 async function cleanupProductImages(product: Product): Promise<void> {
@@ -42,6 +49,10 @@ export type ProductInput = {
   image: string
   description: string
   qty: number
+  initialQty?: number
+  lowStockAlertMode?: Product['lowStockAlertMode']
+  lowStockAlertValue?: number | null
+  unitOfMeasure: Product['unitOfMeasure']
   variants: ProductVariant[]
 }
 
@@ -123,6 +134,36 @@ export async function createProduct(input: ProductInput): Promise<Product> {
     throw new Error('Each variant quantity must be a whole number zero or greater')
   }
 
+  const alertFields = resolveStockAlertFields({
+    qty: input.qty,
+    initialQty: input.initialQty,
+    lowStockAlertMode: input.lowStockAlertMode,
+    lowStockAlertValue: input.lowStockAlertValue,
+  })
+  const alertError = validateLowStockAlert(
+    alertFields.initialQty,
+    alertFields.lowStockAlertMode,
+    alertFields.lowStockAlertValue,
+  )
+  if (alertError) {
+    throw new Error(alertError)
+  }
+
+  const variants = input.variants.map((variant) => {
+    const normalized = normalizeProductVariant(variant)
+    const variantAlertError = validateLowStockAlert(
+      normalized.initialQty,
+      normalized.lowStockAlertMode,
+      normalized.lowStockAlertValue,
+    )
+
+    if (variantAlertError) {
+      throw new Error(`Variant "${normalized.name}": ${variantAlertError}`)
+    }
+
+    return normalized
+  })
+
   const now = new Date()
   const product: Product = {
     id: crypto.randomUUID(),
@@ -133,8 +174,12 @@ export async function createProduct(input: ProductInput): Promise<Product> {
     image: input.image.trim(),
     description: input.description.trim(),
     qty: input.qty,
+    initialQty: alertFields.initialQty,
+    lowStockAlertMode: alertFields.lowStockAlertMode,
+    lowStockAlertValue: alertFields.lowStockAlertValue,
+    unitOfMeasure: input.unitOfMeasure ?? DEFAULT_PRODUCT_UNIT_OF_MEASURE,
     active: 1,
-    variants: input.variants,
+    variants,
     createdAt: now,
     updatedAt: now,
   }
@@ -191,6 +236,39 @@ export async function updateProduct(
     throw new Error('Each variant quantity must be a whole number zero or greater')
   }
 
+  const alertFields = resolveStockAlertFields({
+    qty: input.qty,
+    initialQty: input.initialQty ?? existing.initialQty ?? existing.qty,
+    lowStockAlertMode: input.lowStockAlertMode ?? existing.lowStockAlertMode,
+    lowStockAlertValue:
+      input.lowStockAlertValue !== undefined
+        ? input.lowStockAlertValue
+        : existing.lowStockAlertValue,
+  })
+  const alertError = validateLowStockAlert(
+    alertFields.initialQty,
+    alertFields.lowStockAlertMode,
+    alertFields.lowStockAlertValue,
+  )
+  if (alertError) {
+    throw new Error(alertError)
+  }
+
+  const variants = input.variants.map((variant) => {
+    const normalized = normalizeProductVariant(variant)
+    const variantAlertError = validateLowStockAlert(
+      normalized.initialQty,
+      normalized.lowStockAlertMode,
+      normalized.lowStockAlertValue,
+    )
+
+    if (variantAlertError) {
+      throw new Error(`Variant "${normalized.name}": ${variantAlertError}`)
+    }
+
+    return normalized
+  })
+
   const updated: Product = {
     ...existing,
     barcode,
@@ -200,7 +278,11 @@ export async function updateProduct(
     image: input.image.trim(),
     description: input.description.trim(),
     qty: input.qty,
-    variants: input.variants,
+    initialQty: alertFields.initialQty,
+    lowStockAlertMode: alertFields.lowStockAlertMode,
+    lowStockAlertValue: alertFields.lowStockAlertValue,
+    unitOfMeasure: input.unitOfMeasure ?? existing.unitOfMeasure ?? DEFAULT_PRODUCT_UNIT_OF_MEASURE,
+    variants,
     updatedAt: new Date(),
   }
 
@@ -243,5 +325,8 @@ export function createEmptyVariant(): ProductVariant {
     price: 0,
     image: '',
     qty: 0,
+    initialQty: 0,
+    lowStockAlertMode: DEFAULT_LOW_STOCK_ALERT_MODE,
+    lowStockAlertValue: null,
   }
 }

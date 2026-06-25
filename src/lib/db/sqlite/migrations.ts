@@ -13,6 +13,13 @@ const SETTINGS_MIGRATIONS: Array<{ column: string; definition: string }> = [
   { column: 'syncPassword', definition: "TEXT NOT NULL DEFAULT ''" },
 ]
 
+const PRODUCT_MIGRATIONS: Array<{ column: string; definition: string }> = [
+  { column: 'unitOfMeasure', definition: "TEXT NOT NULL DEFAULT 'pc'" },
+  { column: 'initialQty', definition: 'INTEGER NOT NULL DEFAULT 0' },
+  { column: 'lowStockAlertMode', definition: "TEXT NOT NULL DEFAULT 'off'" },
+  { column: 'lowStockAlertValue', definition: 'INTEGER' },
+]
+
 async function getTableColumns(
   connection: SQLiteDBConnection,
   table: string,
@@ -49,6 +56,28 @@ export async function migrateSqliteSchema(connection: SQLiteDBConnection): Promi
     )
     await connection.run(
       `UPDATE settings SET autoPrint = CASE WHEN autoInvoice = 1 THEN 'invoice' ELSE 'off' END`,
+      [],
+      false,
+    )
+  }
+
+  const productColumns = await getTableColumns(connection, 'products')
+
+  for (const migration of PRODUCT_MIGRATIONS) {
+    if (!productColumns.has(migration.column)) {
+      await connection.run(
+        `ALTER TABLE products ADD COLUMN ${migration.column} ${migration.definition}`,
+        [],
+        false,
+      )
+    }
+  }
+
+  const refreshedProductColumns = await getTableColumns(connection, 'products')
+
+  if (refreshedProductColumns.has('initialQty')) {
+    await connection.run(
+      `UPDATE products SET initialQty = qty WHERE initialQty = 0 OR initialQty IS NULL`,
       [],
       false,
     )

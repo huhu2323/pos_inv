@@ -3,6 +3,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import {
   Box,
   Button,
@@ -24,12 +25,21 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { MetricCard } from '@/shared/components/ui/MetricCard'
 import { DataTableCard } from '@/shared/components/ui/DataTableCard'
 import { StatusChip } from '@/shared/components/ui/StatusChip'
+import { listProducts } from '@/lib/services/productService'
 import { getTodaySalesStats, listSales, type TodaySalesStats } from '@/lib/services/saleService'
 import { formatCurrency } from '@/shared/utils/currency'
 import { formatDate } from '@/shared/utils/formatDate'
+import {
+  collectLowStockAlerts,
+  formatLowStockAlertLabel,
+  type LowStockAlertItem,
+} from '@/shared/utils/lowStockAlert'
+import { formatQtyWithUnit } from '@/shared/utils/productUnitOfMeasure'
 import { monoFontFamily } from '@/shared/theme/stitchDesignTokens'
 import { stitchTableHeadSx } from '@/shared/theme/stitchStyles'
 import type { Sale } from '@/lib/db/types'
+
+const DASHBOARD_LOW_STOCK_LIMIT = 10
 
 const emptyStats: TodaySalesStats = {
   totalSales: 0,
@@ -43,21 +53,28 @@ export function DashboardPage() {
   const isAdmin = user?.role === 'admin'
   const [stats, setStats] = useState<TodaySalesStats>(emptyStats)
   const [recentSales, setRecentSales] = useState<Sale[]>([])
+  const [lowStockAlerts, setLowStockAlerts] = useState<LowStockAlertItem[]>([])
 
   useEffect(() => {
     let active = true
 
     async function load() {
       try {
-        const [todayStats, sales] = await Promise.all([getTodaySalesStats(), listSales()])
+        const [todayStats, sales, products] = await Promise.all([
+          getTodaySalesStats(),
+          listSales(),
+          listProducts(),
+        ])
         if (active) {
           setStats(todayStats)
           setRecentSales(sales.filter((s) => s.type === 'sale').slice(0, 5))
+          setLowStockAlerts(collectLowStockAlerts(products))
         }
       } catch {
         if (active) {
           setStats(emptyStats)
           setRecentSales([])
+          setLowStockAlerts([])
         }
       }
     }
@@ -130,15 +147,21 @@ export function DashboardPage() {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <MetricCard
-            label="Register"
-            value="Ready"
-            icon={AttachMoneyIcon}
-            valueColor="success.main"
-            iconBg="#82f9be33"
-            iconColor="success.main"
+            label="Low stock"
+            value={String(lowStockAlerts.length)}
+            icon={WarningAmberIcon}
+            valueColor={lowStockAlerts.length > 0 ? 'warning.main' : 'text.primary'}
+            iconBg={lowStockAlerts.length > 0 ? '#fff4e5' : '#f1f3ff'}
+            iconColor={lowStockAlerts.length > 0 ? 'warning.main' : 'primary.main'}
             hint={
-              <Typography variant="caption" color="success.main" sx={{ fontWeight: 700 }}>
-                Terminal online
+              <Typography
+                variant="caption"
+                color={lowStockAlerts.length > 0 ? 'warning.main' : 'text.secondary'}
+                sx={{ fontWeight: lowStockAlerts.length > 0 ? 700 : 400 }}
+              >
+                {lowStockAlerts.length > 0
+                  ? 'Items at or below alert level'
+                  : 'No stock alerts right now'}
               </Typography>
             }
           />
@@ -205,6 +228,79 @@ export function DashboardPage() {
           </Card>
         </Grid>
       </Grid>
+
+      <Box sx={{ mb: 4 }}>
+        <DataTableCard
+          title="Low stock alerts"
+          action={
+            lowStockAlerts.length > 0 ? (
+              <Button
+                size="small"
+                color="primary"
+                endIcon={<ArrowForwardIcon />}
+                onClick={() => navigate('/products')}
+                sx={{ fontWeight: 700 }}
+              >
+                Manage products
+              </Button>
+            ) : undefined
+          }
+        >
+        <TableContainer>
+          <Table>
+            <TableHead sx={stitchTableHeadSx}>
+              <TableRow>
+                <TableCell>Product</TableCell>
+                <TableCell align="right">Current</TableCell>
+                <TableCell align="right">Alert at</TableCell>
+                <TableCell>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {lowStockAlerts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+                      No products are below their configured low stock thresholds.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                lowStockAlerts.slice(0, DASHBOARD_LOW_STOCK_LIMIT).map((alert) => (
+                  <TableRow
+                    key={`${alert.productId}:${alert.variantId ?? 'base'}`}
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => navigate('/products')}
+                  >
+                    <TableCell sx={{ fontWeight: 600 }}>
+                      {formatLowStockAlertLabel(alert)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontFamily: monoFontFamily }}>
+                      {formatQtyWithUnit(alert.qty, alert.unitOfMeasure)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontFamily: monoFontFamily }}>
+                      {formatQtyWithUnit(alert.threshold, alert.unitOfMeasure)}
+                    </TableCell>
+                    <TableCell>
+                      <StatusChip
+                        status={alert.qty === 0 ? 'error' : 'warning'}
+                        label={alert.qty === 0 ? 'Out of stock' : 'Low stock'}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        {lowStockAlerts.length > DASHBOARD_LOW_STOCK_LIMIT && (
+          <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1.5 }}>
+            Showing the {DASHBOARD_LOW_STOCK_LIMIT} lowest stock items by current quantity.
+          </Typography>
+        )}
+        </DataTableCard>
+      </Box>
 
       <DataTableCard
         title="Recent transactions"

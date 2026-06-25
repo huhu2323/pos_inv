@@ -42,6 +42,7 @@ import { DataTableCard } from '@/shared/components/ui/DataTableCard'
 import { monoFontFamily } from '@/shared/theme/stitchDesignTokens'
 import { stitchTableHeadSx } from '@/shared/theme/stitchStyles'
 import { formatCurrency } from '@/shared/utils/currency'
+import { formatQtyWithUnit, PRODUCT_UNIT_LABELS } from '@/shared/utils/productUnitOfMeasure'
 
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -189,6 +190,7 @@ export function ProductsPage() {
               <TableCell>Name</TableCell>
               <TableCell align="right">Default price</TableCell>
               <TableCell align="right">Qty</TableCell>
+              <TableCell>Unit</TableCell>
               <TableCell>Variants</TableCell>
               <TableCell align="center">Active</TableCell>
               <TableCell align="right">Actions</TableCell>
@@ -197,13 +199,13 @@ export function ProductsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8}>
+                <TableCell colSpan={9}>
                   <Typography color="text.secondary">Loading products...</Typography>
                 </TableCell>
               </TableRow>
             ) : products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8}>
+                <TableCell colSpan={9}>
                   <Typography color="text.secondary">
                     No products yet. Add your first product to get started.
                   </Typography>
@@ -225,7 +227,8 @@ export function ProductsPage() {
                   </TableCell>
                   <TableCell>{product.name}</TableCell>
                   <TableCell align="right">{formatCurrency(product.defaultPrice)}</TableCell>
-                  <TableCell align="right">{product.qty}</TableCell>
+                  <TableCell align="right">{formatQtyWithUnit(product.qty, product.unitOfMeasure)}</TableCell>
+                  <TableCell>{PRODUCT_UNIT_LABELS[product.unitOfMeasure]}</TableCell>
                   <TableCell>
                     {product.variants.length === 0 ? (
                       <Typography variant="body2" color="text.secondary">
@@ -244,7 +247,7 @@ export function ProductsPage() {
                                 sx={{ width: 24, height: 24 }}
                               />
                             }
-                            label={`${variant.name} (${formatCurrency(variant.price)}) · qty ${variant.qty}`}
+                            label={`${variant.name} (${formatCurrency(variant.price)}) · qty ${formatQtyWithUnit(variant.qty, product.unitOfMeasure)}`}
                           />
                         ))}
                       </Stack>

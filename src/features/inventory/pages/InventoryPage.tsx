@@ -23,6 +23,7 @@ import { DataTableCard } from '@/shared/components/ui/DataTableCard'
 import { StatusChip } from '@/shared/components/ui/StatusChip'
 import { stitchTableHeadSx } from '@/shared/theme/stitchStyles'
 import { formatDate } from '@/shared/utils/formatDate'
+import { formatQtyWithUnit } from '@/shared/utils/productUnitOfMeasure'
 
 function movementLabel(type: InventoryLog['type']): string {
   return type === 'inbound' ? 'Inbound' : 'Outbound'
@@ -35,6 +36,8 @@ export function InventoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
+
+  const productUnits = new Map(products.map((product) => [product.id, product.unitOfMeasure]))
 
   useEffect(() => {
     let active = true
@@ -180,9 +183,15 @@ export function InventoryPage() {
                   </TableCell>
                   <TableCell>{log.productName}</TableCell>
                   <TableCell>{log.variantName ?? 'Product (base)'}</TableCell>
-                  <TableCell align="right">{log.qty}</TableCell>
-                  <TableCell align="right">{log.beforeQty}</TableCell>
-                  <TableCell align="right">{log.afterQty}</TableCell>
+                  <TableCell align="right">
+                    {formatQtyWithUnit(log.qty, productUnits.get(log.productId) ?? 'pc')}
+                  </TableCell>
+                  <TableCell align="right">
+                    {formatQtyWithUnit(log.beforeQty, productUnits.get(log.productId) ?? 'pc')}
+                  </TableCell>
+                  <TableCell align="right">
+                    {formatQtyWithUnit(log.afterQty, productUnits.get(log.productId) ?? 'pc')}
+                  </TableCell>
                   <TableCell>{log.reference || '—'}</TableCell>
                   <TableCell>{log.createdByName}</TableCell>
                 </TableRow>

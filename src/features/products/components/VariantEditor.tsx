@@ -12,6 +12,8 @@ import {
 } from '@mui/material'
 import type { ProductVariant } from '@/lib/db/types'
 import { createEmptyVariant } from '@/lib/services/productService'
+import { LowStockAlertFields } from '@/shared/components/LowStockAlertFields'
+import { DEFAULT_LOW_STOCK_ALERT_MODE } from '@/shared/utils/lowStockAlert'
 import { ImageUploadField } from './ImageUploadField'
 
 interface VariantEditorProps {
@@ -109,6 +111,32 @@ export function VariantEditor({ variants, onChange }: VariantEditorProps) {
                       required
                     />
                   </Stack>
+
+                  <LowStockAlertFields
+                    compact
+                    initialQty={String(variant.initialQty ?? variant.qty)}
+                    mode={variant.lowStockAlertMode ?? DEFAULT_LOW_STOCK_ALERT_MODE}
+                    value={
+                      variant.lowStockAlertValue !== null &&
+                      variant.lowStockAlertValue !== undefined
+                        ? String(variant.lowStockAlertValue)
+                        : ''
+                    }
+                    onInitialQtyChange={(value) =>
+                      updateVariant(variant.id, { initialQty: Math.max(0, Number(value) || 0) })
+                    }
+                    onModeChange={(mode) =>
+                      updateVariant(variant.id, {
+                        lowStockAlertMode: mode,
+                        lowStockAlertValue: mode === 'off' ? null : variant.lowStockAlertValue,
+                      })
+                    }
+                    onValueChange={(value) =>
+                      updateVariant(variant.id, {
+                        lowStockAlertValue: value.trim() ? Number(value) : null,
+                      })
+                    }
+                  />
                 </Stack>
               </CardContent>
             </Card>

@@ -20,6 +20,10 @@ import {
 import { useMemo, useState } from 'react'
 import type { InventoryMovementType, Product } from '@/lib/db/types'
 import type { InventoryCreateInput } from '@/lib/services/inventoryService'
+import {
+  formatQtyWithUnit,
+  PRODUCT_UNIT_LABELS,
+} from '@/shared/utils/productUnitOfMeasure'
 
 interface InventoryFormDialogProps {
   open: boolean
@@ -46,6 +50,9 @@ function InventoryFormContent({ products, onClose, onSave }: InventoryFormConten
   const [submitting, setSubmitting] = useState(false)
 
   const selectedProduct = products.find((product) => product.id === productId)
+  const unitLabel = selectedProduct
+    ? PRODUCT_UNIT_LABELS[selectedProduct.unitOfMeasure]
+    : ''
 
   const beforeQty = useMemo(() => {
     if (!selectedProduct) {
@@ -89,7 +96,9 @@ function InventoryFormContent({ products, onClose, onSave }: InventoryFormConten
     }
 
     if (type === 'outbound' && parsedQty > beforeQty) {
-      setError(`Cannot outbound more than available stock (${beforeQty})`)
+      setError(
+        `Cannot outbound more than available stock (${formatQtyWithUnit(beforeQty, selectedProduct!.unitOfMeasure)})`,
+      )
       return
     }
 
@@ -127,7 +136,7 @@ function InventoryFormContent({ products, onClose, onSave }: InventoryFormConten
             >
               {products.map((product) => (
                 <MenuItem key={product.id} value={product.id}>
-                  {product.name}
+                  {product.name} ({formatQtyWithUnit(product.qty, product.unitOfMeasure)} in stock)
                 </MenuItem>
               ))}
             </Select>
@@ -171,7 +180,7 @@ function InventoryFormContent({ products, onClose, onSave }: InventoryFormConten
           </FormControl>
 
           <TextField
-            label="Quantity"
+            label={unitLabel ? `Quantity (${unitLabel})` : 'Quantity'}
             type="number"
             value={qty}
             onChange={(event) => setQty(event.target.value)}
@@ -192,13 +201,13 @@ function InventoryFormContent({ products, onClose, onSave }: InventoryFormConten
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
-              label="Before qty"
+              label={unitLabel ? `Before qty (${unitLabel})` : 'Before qty'}
               value={selectedProduct ? beforeQty : ''}
               fullWidth
               slotProps={{ input: { readOnly: true } }}
             />
             <TextField
-              label="After qty"
+              label={unitLabel ? `After qty (${unitLabel})` : 'After qty'}
               value={selectedProduct ? afterQty : ''}
               fullWidth
               slotProps={{ input: { readOnly: true } }}

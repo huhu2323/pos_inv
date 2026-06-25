@@ -9,6 +9,11 @@ import type {
   Session,
   User,
 } from '@/lib/db/types'
+import { normalizeProductUnitOfMeasure } from '@/shared/utils/productUnitOfMeasure'
+import {
+  normalizeLowStockAlertMode,
+  normalizeProductVariant,
+} from '@/shared/utils/lowStockAlert'
 
 interface StoredImageRecord {
   id: string
@@ -105,6 +110,8 @@ export function sessionToValues(session: Session): unknown[] {
 }
 
 export function rowToProduct(row: Record<string, unknown>): Product {
+  const qty = Number(row.qty)
+
   return {
     id: String(row.id),
     barcode: String(row.barcode),
@@ -113,9 +120,18 @@ export function rowToProduct(row: Record<string, unknown>): Product {
     defaultPrice: Number(row.defaultPrice),
     image: String(row.image),
     description: String(row.description),
-    qty: Number(row.qty),
+    qty,
+    initialQty: typeof row.initialQty === 'number' ? row.initialQty : qty,
+    lowStockAlertMode: normalizeLowStockAlertMode(row.lowStockAlertMode),
+    lowStockAlertValue:
+      row.lowStockAlertValue === null || row.lowStockAlertValue === undefined
+        ? null
+        : Number(row.lowStockAlertValue),
+    unitOfMeasure: normalizeProductUnitOfMeasure(row.unitOfMeasure),
     active: Number(row.active) === 0 ? 0 : 1,
-    variants: parseJson(row.variants, []),
+    variants: parseJson(row.variants, []).map((variant) =>
+      normalizeProductVariant(variant as Product['variants'][number]),
+    ),
     createdAt: parseDate(row.createdAt),
     updatedAt: parseDate(row.updatedAt),
   }
@@ -131,6 +147,10 @@ export function productToValues(product: Product): unknown[] {
     product.image,
     product.description,
     product.qty,
+    product.initialQty,
+    product.lowStockAlertMode,
+    product.lowStockAlertValue,
+    product.unitOfMeasure,
     product.active,
     JSON.stringify(product.variants),
     product.createdAt.toISOString(),

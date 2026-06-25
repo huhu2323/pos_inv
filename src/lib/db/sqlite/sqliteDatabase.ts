@@ -326,7 +326,7 @@ class ProductsTable extends SqliteTable<Product> {
 
   async add(product: Product): Promise<void> {
     await this.connection.run(
-      `INSERT INTO ${this.name} (id, barcode, shortName, name, defaultPrice, image, description, qty, active, variants, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO ${this.name} (id, barcode, shortName, name, defaultPrice, image, description, qty, initialQty, lowStockAlertMode, lowStockAlertValue, unitOfMeasure, active, variants, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       productToValues(product),
       false,
     )
@@ -334,7 +334,7 @@ class ProductsTable extends SqliteTable<Product> {
 
   async put(product: Product): Promise<void> {
     await this.connection.run(
-      `INSERT OR REPLACE INTO ${this.name} (id, barcode, shortName, name, defaultPrice, image, description, qty, active, variants, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT OR REPLACE INTO ${this.name} (id, barcode, shortName, name, defaultPrice, image, description, qty, initialQty, lowStockAlertMode, lowStockAlertValue, unitOfMeasure, active, variants, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       productToValues(product),
       false,
     )

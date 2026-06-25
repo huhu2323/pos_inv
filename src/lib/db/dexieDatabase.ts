@@ -410,6 +410,128 @@ export class TofuPosDatabase extends Dexie {
             }
           })
       })
+
+    this.version(22)
+      .stores({
+        users: '++id, &username, role, createdAt',
+        sessions: '++id, &token, userId, expiresAt',
+        products: 'id, &shortName, &barcode, name, createdAt, active',
+        images: 'id, createdAt',
+        inventoryLogs: 'id, productId, type, createdAt',
+        sales: 'id, type, status, createdAt, createdById, originalSaleId',
+        settings: 'id',
+        invoices: 'id, &invoiceNumber, saleId, createdAt, createdById',
+        dataArchives: 'id, status, createdAt, archivedById',
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table('products')
+          .toCollection()
+          .modify((product: Record<string, unknown>) => {
+            if (typeof product.unitOfMeasure !== 'string') {
+              product.unitOfMeasure = 'pc'
+            }
+          })
+      })
+
+    this.version(23)
+      .stores({
+        users: '++id, &username, role, createdAt',
+        sessions: '++id, &token, userId, expiresAt',
+        products: 'id, &shortName, &barcode, name, createdAt, active',
+        images: 'id, createdAt',
+        inventoryLogs: 'id, productId, type, createdAt',
+        sales: 'id, type, status, createdAt, createdById, originalSaleId',
+        settings: 'id',
+        invoices: 'id, &invoiceNumber, saleId, createdAt, createdById',
+        dataArchives: 'id, status, createdAt, archivedById',
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table('products')
+          .toCollection()
+          .modify((product: Record<string, unknown>) => {
+            const qty = typeof product.qty === 'number' ? product.qty : 0
+
+            if (typeof product.initialQty !== 'number') {
+              product.initialQty = qty
+            }
+
+            if (product.lowStockAlertMode !== 'percentage' && product.lowStockAlertMode !== 'unit') {
+              product.lowStockAlertMode = 'off'
+            }
+
+            if (product.lowStockAlertValue !== null && typeof product.lowStockAlertValue !== 'number') {
+              product.lowStockAlertValue = null
+            }
+
+            if (Array.isArray(product.variants)) {
+              product.variants = product.variants.map((variant: Record<string, unknown>) => {
+                const variantQty = typeof variant.qty === 'number' ? variant.qty : 0
+
+                return {
+                  ...variant,
+                  initialQty:
+                    typeof variant.initialQty === 'number' ? variant.initialQty : variantQty,
+                  lowStockAlertMode:
+                    variant.lowStockAlertMode === 'percentage' ||
+                    variant.lowStockAlertMode === 'unit'
+                      ? variant.lowStockAlertMode
+                      : 'off',
+                  lowStockAlertValue:
+                    variant.lowStockAlertValue !== null &&
+                    typeof variant.lowStockAlertValue === 'number'
+                      ? variant.lowStockAlertValue
+                      : null,
+                }
+              })
+            }
+          })
+      })
+
+    this.version(24)
+      .stores({
+        users: '++id, &username, role, createdAt',
+        sessions: '++id, &token, userId, expiresAt',
+        products: 'id, &shortName, &barcode, name, createdAt, active',
+        images: 'id, createdAt',
+        inventoryLogs: 'id, productId, type, createdAt',
+        sales: 'id, type, status, createdAt, createdById, originalSaleId',
+        settings: 'id',
+        invoices: 'id, &invoiceNumber, saleId, createdAt, createdById',
+        dataArchives: 'id, status, createdAt, archivedById',
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table('products')
+          .toCollection()
+          .modify((product: Record<string, unknown>) => {
+            if (product.lowStockAlertMode === 'percentage') {
+              product.lowStockAlertMode = 'off'
+              product.lowStockAlertValue = null
+            } else if (product.lowStockAlertMode !== 'unit') {
+              product.lowStockAlertMode = 'off'
+            }
+
+            if (Array.isArray(product.variants)) {
+              product.variants = product.variants.map((variant: Record<string, unknown>) => {
+                if (variant.lowStockAlertMode === 'percentage') {
+                  return {
+                    ...variant,
+                    lowStockAlertMode: 'off',
+                    lowStockAlertValue: null,
+                  }
+                }
+
+                if (variant.lowStockAlertMode !== 'unit') {
+                  return { ...variant, lowStockAlertMode: 'off' }
+                }
+
+                return variant
+              })
+            }
+          })
+      })
   }
 }
 

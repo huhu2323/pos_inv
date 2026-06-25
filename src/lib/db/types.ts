@@ -40,7 +40,14 @@ export interface ProductVariant {
   price: number
   image: string
   qty: number
+  initialQty: number
+  lowStockAlertMode: LowStockAlertMode
+  lowStockAlertValue: number | null
 }
+
+export type LowStockAlertMode = 'off' | 'unit'
+
+export type ProductUnitOfMeasure = 'kg' | 'pc' | 'liter'
 
 export interface Product {
   id: string
@@ -51,6 +58,10 @@ export interface Product {
   image: string
   description: string
   qty: number
+  initialQty: number
+  lowStockAlertMode: LowStockAlertMode
+  lowStockAlertValue: number | null
+  unitOfMeasure: ProductUnitOfMeasure
   active: 0 | 1
   variants: ProductVariant[]
   createdAt: Date
