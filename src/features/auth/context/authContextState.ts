@@ -12,6 +12,14 @@ export interface AuthContextValue {
     password: string
     displayName: string
   }) => Promise<void>
+  setupAdminFromAdmin: (input: {
+    username: string
+    password: string
+    displayName: string
+    apiUrl: string
+    tenantId: string
+    posId: string
+  }) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

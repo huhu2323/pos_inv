@@ -141,8 +141,7 @@ export interface AppSettings {
   invoiceNextNumber: number
   syncApiUrl: string
   syncTenantId: string
-  syncEmail: string
-  syncPassword: string
+  syncPosId: string
   updatedAt: Date
 }
 

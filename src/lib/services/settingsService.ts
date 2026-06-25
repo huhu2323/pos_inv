@@ -1,4 +1,6 @@
 import bcrypt from 'bcryptjs'
+import { createApiClient } from '@/lib/api/client'
+import type { RemotePosSettings } from '@/lib/api/types'
 import { db } from '@/lib/db/database'
 import type { AppSettings, AutoPrintMode } from '@/lib/db/types'
 
@@ -29,8 +31,7 @@ export type SettingsUpdateInput = {
   officialReceiptBottomText: string
   syncApiUrl?: string
   syncTenantId?: string
-  syncEmail?: string
-  syncPassword?: string
+  syncPosId?: string
 }
 
 function createDefaultSettings(): AppSettings {
@@ -54,8 +55,7 @@ function createDefaultSettings(): AppSettings {
     invoiceNextNumber: 0,
     syncApiUrl: '',
     syncTenantId: '',
-    syncEmail: '',
-    syncPassword: '',
+    syncPosId: '',
     updatedAt: now,
   }
 }
@@ -93,8 +93,7 @@ function isSettingsComplete(
     typeof settings.invoiceNextNumber === 'number' &&
     typeof settings.syncApiUrl === 'string' &&
     typeof settings.syncTenantId === 'string' &&
-    typeof settings.syncEmail === 'string' &&
-    typeof settings.syncPassword === 'string'
+    typeof settings.syncPosId === 'string'
   )
 }
 
@@ -148,8 +147,12 @@ function normalizeSettings(
       typeof settings.invoiceNextNumber === 'number' ? settings.invoiceNextNumber : 0,
     syncApiUrl: typeof settings.syncApiUrl === 'string' ? settings.syncApiUrl : '',
     syncTenantId: typeof settings.syncTenantId === 'string' ? settings.syncTenantId : '',
-    syncEmail: typeof settings.syncEmail === 'string' ? settings.syncEmail : '',
-    syncPassword: typeof settings.syncPassword === 'string' ? settings.syncPassword : '',
+    syncPosId:
+      typeof settings.syncPosId === 'string'
+        ? settings.syncPosId
+        : typeof (settings as { syncEmail?: string }).syncEmail === 'string'
+          ? ''
+          : '',
   }
 }
 
@@ -214,8 +217,7 @@ export async function updateSettings(input: SettingsUpdateInput): Promise<AppSet
     officialReceiptBottomText: input.officialReceiptBottomText.trim() || 'Thank You',
     syncApiUrl: (input.syncApiUrl ?? '').trim(),
     syncTenantId: (input.syncTenantId ?? '').trim(),
-    syncEmail: (input.syncEmail ?? '').trim(),
-    syncPassword: input.syncPassword ?? '',
+    syncPosId: (input.syncPosId ?? '').trim(),
     updatedAt: new Date(),
   }
 
@@ -242,4 +244,43 @@ export async function verifyMasterPassword(password: string): Promise<boolean> {
 export async function hasMasterPassword(): Promise<boolean> {
   const settings = await getSettings()
   return Boolean(settings.masterPasswordHash)
+}
+
+export type AdminConnectionInput = {
+  apiUrl: string
+  tenantId: string
+  posId: string
+}
+
+export async function fetchRemotePosSettings(
+  input: AdminConnectionInput,
+): Promise<RemotePosSettings> {
+  const client = createApiClient(input.apiUrl, input.tenantId)
+  await client.authenticatePos(input.posId)
+  return client.fetchPosSettings()
+}
+
+export async function initializeSettingsFromAdmin(
+  remoteSettings: RemotePosSettings,
+  connection: AdminConnectionInput,
+): Promise<AppSettings> {
+  const settings = createDefaultSettings()
+  settings.masterPasswordHash = remoteSettings.masterPasswordHash
+  settings.autoPrint = remoteSettings.autoPrint as AutoPrintMode
+  settings.continuousBarcodeScanning = remoteSettings.continuousBarcodeScanning
+  settings.vatPercentage = remoteSettings.vatPercentage
+  settings.receiptMainText = remoteSettings.receiptMainText
+  settings.receiptAddress = remoteSettings.receiptAddress
+  settings.receiptContactNumber = remoteSettings.receiptContactNumber
+  settings.receiptTin = remoteSettings.receiptTin
+  settings.receiptBottomText = remoteSettings.receiptBottomText
+  settings.officialReceiptMainText = remoteSettings.officialReceiptMainText
+  settings.officialReceiptAddress = remoteSettings.officialReceiptAddress
+  settings.officialReceiptContactNumber = remoteSettings.officialReceiptContactNumber
+  settings.officialReceiptTin = remoteSettings.officialReceiptTin
+  settings.officialReceiptBottomText = remoteSettings.officialReceiptBottomText
+  settings.syncApiUrl = connection.apiUrl.trim()
+  settings.syncTenantId = connection.tenantId.trim()
+  settings.syncPosId = connection.posId.trim()
+  return persistSettings(settings)
 }

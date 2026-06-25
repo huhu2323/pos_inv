@@ -37,8 +37,7 @@ export function SettingsPage() {
   const [officialReceiptBottomText, setOfficialReceiptBottomText] = useState('Thank You')
   const [syncApiUrl, setSyncApiUrl] = useState('')
   const [syncTenantId, setSyncTenantId] = useState('')
-  const [syncEmail, setSyncEmail] = useState('')
-  const [syncPassword, setSyncPassword] = useState('')
+  const [syncPosId, setSyncPosId] = useState('')
   const [masterPassword, setMasterPassword] = useState('')
   const [hasExistingMasterPassword, setHasExistingMasterPassword] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -72,8 +71,7 @@ export function SettingsPage() {
           setOfficialReceiptBottomText(settings.officialReceiptBottomText)
           setSyncApiUrl(settings.syncApiUrl)
           setSyncTenantId(settings.syncTenantId)
-          setSyncEmail(settings.syncEmail)
-          setSyncPassword(settings.syncPassword)
+          setSyncPosId(settings.syncPosId)
           setHasExistingMasterPassword(Boolean(settings.masterPasswordHash))
         }
       } catch (err) {
@@ -121,8 +119,7 @@ export function SettingsPage() {
         officialReceiptBottomText,
         syncApiUrl,
         syncTenantId,
-        syncEmail,
-        syncPassword,
+        syncPosId,
         masterPassword: masterPassword.trim() || undefined,
       })
 
@@ -161,8 +158,7 @@ export function SettingsPage() {
         officialReceiptBottomText,
         syncApiUrl,
         syncTenantId,
-        syncEmail,
-        syncPassword,
+        syncPosId,
       })
 
       const result = await syncWithServer()
@@ -416,8 +412,9 @@ export function SettingsPage() {
             Sync
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Push new products, sales, and invoices to the server. Existing records are matched by
-            their local UUID so nothing is duplicated.
+            Push new products, sales, and invoices to Tofu Admin. Use the admin URL from your store
+            dashboard (for example http://localhost:5174). Existing records are matched by their
+            local UUID so nothing is duplicated.
           </Typography>
           <Stack spacing={2}>
             <TextField
@@ -426,7 +423,8 @@ export function SettingsPage() {
               onChange={(event) => setSyncApiUrl(event.target.value)}
               fullWidth
               disabled={loading || saving || syncing}
-              placeholder="http://localhost:3000"
+              placeholder="http://localhost:5174"
+              helperText="Tofu Admin URL"
             />
             <TextField
               label="Tenant ID"
@@ -436,20 +434,12 @@ export function SettingsPage() {
               disabled={loading || saving || syncing}
             />
             <TextField
-              label="API email"
-              type="email"
-              value={syncEmail}
-              onChange={(event) => setSyncEmail(event.target.value)}
+              label="POS ID"
+              value={syncPosId}
+              onChange={(event) => setSyncPosId(event.target.value)}
               fullWidth
               disabled={loading || saving || syncing}
-            />
-            <TextField
-              label="API password"
-              type="password"
-              value={syncPassword}
-              onChange={(event) => setSyncPassword(event.target.value)}
-              fullWidth
-              disabled={loading || saving || syncing}
+              helperText="Generated when you register this terminal in Tofu Admin"
             />
             <Button
               variant="outlined"

@@ -74,6 +74,26 @@ export async function listSales(): Promise<Sale[]> {
   return db.sales.orderBy('createdAt').reverse().toArray()
 }
 
+export type SellablePurchaseCounts = Map<string, number>
+
+export async function getSellablePurchaseCounts(): Promise<SellablePurchaseCounts> {
+  const sales = await db.sales.toArray()
+  const counts: SellablePurchaseCounts = new Map()
+
+  for (const sale of sales) {
+    if (sale.type !== 'sale' || sale.status !== 'completed') {
+      continue
+    }
+
+    for (const line of sale.lines) {
+      const key = line.variantId ? `${line.productId}:${line.variantId}` : line.productId
+      counts.set(key, (counts.get(key) ?? 0) + line.quantity)
+    }
+  }
+
+  return counts
+}
+
 export async function getTodaySalesStats(): Promise<TodaySalesStats> {
   const { start, end } = getTodayRange()
   const sales = await db.sales

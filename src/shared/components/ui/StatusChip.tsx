@@ -8,7 +8,7 @@ const variantStyles: Record<
 > = {
   success: { bgcolor: '#82f9be', color: '#005235' },
   error: { bgcolor: '#ffdad6', color: '#93000a' },
-  warning: { bgcolor: '#afecff', color: '#004e5d' },
+  warning: { bgcolor: '#fff4e5', color: '#e65100' },
   info: { bgcolor: '#dae2ff', color: '#0040a2' },
   neutral: { bgcolor: '#e8edff', color: '#434654' },
 }

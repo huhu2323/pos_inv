@@ -24,3 +24,26 @@ export interface SyncPushResponse {
   sales: SyncEntityResult
   invoices: SyncEntityResult
 }
+
+export type RemoteAutoPrintMode =
+  | 'off'
+  | 'invoice'
+  | 'official_receipt'
+  | 'acknowledgement_receipt'
+
+export interface RemotePosSettings {
+  masterPasswordHash: string
+  vatPercentage: number
+  receiptMainText: string
+  receiptAddress: string
+  receiptContactNumber: string
+  receiptTin: string
+  receiptBottomText: string
+  officialReceiptMainText: string
+  officialReceiptAddress: string
+  officialReceiptContactNumber: string
+  officialReceiptTin: string
+  officialReceiptBottomText: string
+  autoPrint: RemoteAutoPrintMode
+  continuousBarcodeScanning: boolean
+}

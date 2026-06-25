@@ -1,5 +1,5 @@
 import type {
-  AuthResponse,
+  RemotePosSettings,
   SyncCheckResponse,
   SyncPushResponse,
 } from '@/lib/api/types'
@@ -26,15 +26,19 @@ export class ApiClient {
     this.tenantId = tenantId
   }
 
-  async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/auth/login', {
+  async authenticatePos(posId: string): Promise<{ accessToken: string }> {
+    const response = await this.request<{ accessToken: string }>('/auth/pos-sync', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ tenantId: this.tenantId, posId: posId.trim() }),
       authenticated: false,
     })
 
     this.accessToken = response.accessToken
     return response
+  }
+
+  fetchPosSettings(): Promise<RemotePosSettings> {
+    return this.request<RemotePosSettings>('/pos-settings')
   }
 
   checkExisting(payload: {

@@ -14,7 +14,7 @@ import {
   login,
   logout,
 } from '@/features/auth/api/authService'
-import { initializeSettings } from '@/lib/services/settingsService'
+import { initializeSettings, initializeSettingsFromAdmin, fetchRemotePosSettings } from '@/lib/services/settingsService'
 import { AuthContext } from '@/features/auth/context/authContextState'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -79,6 +79,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const handleSetupAdminFromAdmin = useCallback(
+    async (input: {
+      username: string
+      password: string
+      displayName: string
+      apiUrl: string
+      tenantId: string
+      posId: string
+    }) => {
+      const connection = {
+        apiUrl: input.apiUrl,
+        tenantId: input.tenantId,
+        posId: input.posId,
+      }
+      const remoteSettings = await fetchRemotePosSettings(connection)
+
+      const adminUser = await createUser({
+        username: input.username,
+        password: input.password,
+        displayName: input.displayName,
+        role: 'admin' as UserRole,
+      })
+      await initializeSettingsFromAdmin(remoteSettings, connection)
+      const authenticatedUser = await login(input.username, input.password)
+      setUser(authenticatedUser ?? adminUser)
+      setNeedsSetup(false)
+    },
+    [],
+  )
+
   const value = useMemo(
     () => ({
       user,
@@ -87,8 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login: handleLogin,
       logout: handleLogout,
       setupAdmin: handleSetupAdmin,
+      setupAdminFromAdmin: handleSetupAdminFromAdmin,
     }),
-    [user, loading, needsSetup, handleLogin, handleLogout, handleSetupAdmin],
+    [user, loading, needsSetup, handleLogin, handleLogout, handleSetupAdmin, handleSetupAdminFromAdmin],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

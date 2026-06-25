@@ -439,7 +439,7 @@ class SettingsTable extends SqliteTable<AppSettings> {
 
   async put(settings: AppSettings): Promise<void> {
     await this.connection.run(
-      `INSERT OR REPLACE INTO ${this.name} (id, masterPasswordHash, autoPrint, continuousBarcodeScanning, vatPercentage, receiptMainText, receiptAddress, receiptContactNumber, receiptTin, receiptBottomText, officialReceiptMainText, officialReceiptAddress, officialReceiptContactNumber, officialReceiptTin, officialReceiptBottomText, invoiceNextNumber, syncApiUrl, syncTenantId, syncEmail, syncPassword, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT OR REPLACE INTO ${this.name} (id, masterPasswordHash, autoPrint, continuousBarcodeScanning, vatPercentage, receiptMainText, receiptAddress, receiptContactNumber, receiptTin, receiptBottomText, officialReceiptMainText, officialReceiptAddress, officialReceiptContactNumber, officialReceiptTin, officialReceiptBottomText, invoiceNextNumber, syncApiUrl, syncTenantId, syncPosId, syncEmail, syncPassword, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       settingsToValues(settings),
       false,
     )

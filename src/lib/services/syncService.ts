@@ -8,21 +8,20 @@ import { getSettings } from '@/lib/services/settingsService'
 
 export type SyncSettings = Pick<
   AppSettings,
-  'syncApiUrl' | 'syncTenantId' | 'syncEmail' | 'syncPassword'
+  'syncApiUrl' | 'syncTenantId' | 'syncPosId'
 >
 
 export function isSyncConfigured(settings: SyncSettings): boolean {
   return Boolean(
     settings.syncApiUrl.trim() &&
       settings.syncTenantId.trim() &&
-      settings.syncEmail.trim() &&
-      settings.syncPassword.trim(),
+      settings.syncPosId.trim(),
   )
 }
 
 function assertSyncConfigured(settings: SyncSettings): void {
   if (!isSyncConfigured(settings)) {
-    throw new Error('Sync settings are incomplete. Save API URL, tenant ID, email, and password first.')
+    throw new Error('Sync settings are incomplete. Save API URL, tenant ID, and POS ID first.')
   }
 }
 
@@ -47,7 +46,7 @@ function toSyncProduct(product: Product) {
   }
 }
 
-function toSyncSale(sale: Sale) {
+function toSyncSale(sale: Sale, posTerminalId: string) {
   return {
     id: sale.id,
     type: sale.type,
@@ -64,10 +63,11 @@ function toSyncSale(sale: Sale) {
     voidedByName: sale.voidedByName,
     voidedAt: sale.voidedAt?.toISOString(),
     createdAt: sale.createdAt.toISOString(),
+    posTerminalId,
   }
 }
 
-function toSyncInvoice(invoice: Invoice) {
+function toSyncInvoice(invoice: Invoice, posTerminalId: string) {
   return {
     id: invoice.id,
     invoiceNumber: invoice.invoiceNumber,
@@ -82,6 +82,7 @@ function toSyncInvoice(invoice: Invoice) {
     createdById: invoice.createdById,
     createdByName: invoice.createdByName,
     createdAt: invoice.createdAt.toISOString(),
+    posTerminalId,
   }
 }
 
@@ -98,7 +99,7 @@ export async function syncWithServer(): Promise<SyncPushResponse> {
   assertSyncConfigured(settings)
 
   const client = createApiClient(settings.syncApiUrl, settings.syncTenantId)
-  await client.login(settings.syncEmail, settings.syncPassword)
+  await client.authenticatePos(settings.syncPosId)
 
   const [products, sales, invoices] = await Promise.all([
     listProducts(),
@@ -126,8 +127,8 @@ export async function syncWithServer(): Promise<SyncPushResponse> {
 
   return client.push({
     products: newProducts.map(toSyncProduct),
-    sales: newSales.map(toSyncSale),
-    invoices: newInvoices.map(toSyncInvoice),
+    sales: newSales.map((sale) => toSyncSale(sale, settings.syncPosId)),
+    invoices: newInvoices.map((invoice) => toSyncInvoice(invoice, settings.syncPosId)),
   })
 }
 

@@ -4,10 +4,13 @@ All notable changes to Tofu POS Terminal are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.6]
 
 ### Added
 
+- Initial setup offers Setup from scratch or Connect to Tofu Admin; the connect path pulls all POS settings (master password, VAT, auto print, barcode scanning, invoice/receipt headers) using tenant ID and POS ID.
+- Critical stock alert level (out of stock, critical, low) derived from unit thresholds and initial quantity, shown on dashboard, inventory, and header notifier.
+- POS sync now uses tenant ID, POS ID, and Tofu Admin API URL only (no user email/password).
 - Low stock alert notifier in the header for employees and admins, with per-product unit thresholds (up to initial qty minus 1).
 - Dashboard low stock alerts table sorted by lowest current stock.
 - Product and variant low stock alert settings on create/edit, synced to the cloud catalog.
@@ -15,8 +18,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Product unit of measure (kg, pc, liter) on product creation, inventory, and synced catalog data.
 - Sync settings fields for API URL, tenant ID, email, and password.
 
+### Fixed
+
+- Low stock alerts now evaluate variant inventory (inheriting product thresholds when a variant has alerts off) instead of unused base product quantity on variant products.
+
 ### Changed
 
+- POS opens with the product grid visible, sorted by most purchased items from completed sales.
+- Sync settings replaced API email/password with POS ID; point API URL at Tofu Admin instead of the backend directly.
 - Low stock alerts use unit thresholds only; percentage-based alerts were removed.
 - Full UI overhaul from Stitch mockups: sidebar shell with Store Manager branding, light top header, cart-table POS layout with payment panel, dashboard metric cards and recent transactions, and consistent table/card patterns across admin pages.
 - UI refreshed with the Stitch "Precision POS" design system: deep blue primary, cyan CTAs, green complete-sale actions, Inter/Hanken Grotesk/JetBrains Mono typography, bordered cards, and 280px sidebar.
@@ -39,25 +48,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [1.0.5] - 2026-06-11
 
 ### Changed
-
-- Version bump release.
-
-## [1.0.7] - 2026-06-15
-
-### Changes
-
-- 3 seperate print document, invoice, acknowledgement and official receipts
-- Settings ui fixes and change
-- Added sync button for future use
-
-## [1.0.9] - 2026-06-15
-
-### Changes
-
-- Added server sync functionalities
-
-## [1.0.11] - 2026-06-15
-
-### Changes
-
-- UI updates

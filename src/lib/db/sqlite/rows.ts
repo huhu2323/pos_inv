@@ -121,7 +121,7 @@ export function rowToProduct(row: Record<string, unknown>): Product {
     image: String(row.image),
     description: String(row.description),
     qty,
-    initialQty: typeof row.initialQty === 'number' ? row.initialQty : qty,
+    initialQty: row.initialQty != null && row.initialQty !== '' ? Number(row.initialQty) : qty,
     lowStockAlertMode: normalizeLowStockAlertMode(row.lowStockAlertMode),
     lowStockAlertValue:
       row.lowStockAlertValue === null || row.lowStockAlertValue === undefined
@@ -305,8 +305,7 @@ export function rowToSettings(row: Record<string, unknown>): AppSettings {
     invoiceNextNumber: Number(row.invoiceNextNumber),
     syncApiUrl: typeof row.syncApiUrl === 'string' ? row.syncApiUrl : '',
     syncTenantId: typeof row.syncTenantId === 'string' ? row.syncTenantId : '',
-    syncEmail: typeof row.syncEmail === 'string' ? row.syncEmail : '',
-    syncPassword: typeof row.syncPassword === 'string' ? row.syncPassword : '',
+    syncPosId: typeof row.syncPosId === 'string' ? row.syncPosId : '',
     updatedAt: parseDate(row.updatedAt),
   }
 }
@@ -331,8 +330,9 @@ export function settingsToValues(settings: AppSettings): unknown[] {
     settings.invoiceNextNumber,
     settings.syncApiUrl,
     settings.syncTenantId,
-    settings.syncEmail,
-    settings.syncPassword,
+    settings.syncPosId,
+    '',
+    '',
     settings.updatedAt.toISOString(),
   ]
 }

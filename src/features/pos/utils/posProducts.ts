@@ -37,6 +37,20 @@ export function buildSellableItems(products: Product[]): PosSellableItem[] {
   })
 }
 
+export function sortSellableItemsByPopularity(
+  items: PosSellableItem[],
+  purchaseCounts: Map<string, number>,
+): PosSellableItem[] {
+  return [...items].sort((a, b) => {
+    const countDiff = (purchaseCounts.get(b.key) ?? 0) - (purchaseCounts.get(a.key) ?? 0)
+    if (countDiff !== 0) {
+      return countDiff
+    }
+
+    return a.label.localeCompare(b.label)
+  })
+}
+
 export function filterSellableItems(
   items: PosSellableItem[],
   query: string,

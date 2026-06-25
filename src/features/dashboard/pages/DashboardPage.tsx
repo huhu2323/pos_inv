@@ -31,12 +31,15 @@ import { formatCurrency } from '@/shared/utils/currency'
 import { formatDate } from '@/shared/utils/formatDate'
 import {
   collectLowStockAlerts,
+  countCriticalStockAlerts,
   formatLowStockAlertLabel,
+  stockAlertLevelLabel,
+  stockAlertLevelToChipStatus,
   type LowStockAlertItem,
 } from '@/shared/utils/lowStockAlert'
 import { formatQtyWithUnit } from '@/shared/utils/productUnitOfMeasure'
 import { monoFontFamily } from '@/shared/theme/stitchDesignTokens'
-import { stitchTableHeadSx } from '@/shared/theme/stitchStyles'
+import { stitchTableHeadSx, labelCapsSx } from '@/shared/theme/stitchStyles'
 import type { Sale } from '@/lib/db/types'
 
 const DASHBOARD_LOW_STOCK_LIMIT = 10
@@ -85,6 +88,10 @@ export function DashboardPage() {
       active = false
     }
   }, [])
+
+  const criticalCount = countCriticalStockAlerts(lowStockAlerts)
+  const hasLowStock = lowStockAlerts.length > 0
+  const hasCritical = criticalCount > 0
 
   return (
     <Box>
@@ -150,18 +157,20 @@ export function DashboardPage() {
             label="Low stock"
             value={String(lowStockAlerts.length)}
             icon={WarningAmberIcon}
-            valueColor={lowStockAlerts.length > 0 ? 'warning.main' : 'text.primary'}
-            iconBg={lowStockAlerts.length > 0 ? '#fff4e5' : '#f1f3ff'}
-            iconColor={lowStockAlerts.length > 0 ? 'warning.main' : 'primary.main'}
+            valueColor={hasCritical ? 'error.main' : hasLowStock ? 'warning.main' : 'text.primary'}
+            iconBg={hasCritical ? '#ffdad6' : hasLowStock ? '#fff4e5' : '#f1f3ff'}
+            iconColor={hasCritical ? 'error.main' : hasLowStock ? 'warning.main' : 'primary.main'}
             hint={
               <Typography
                 variant="caption"
-                color={lowStockAlerts.length > 0 ? 'warning.main' : 'text.secondary'}
-                sx={{ fontWeight: lowStockAlerts.length > 0 ? 700 : 400 }}
+                color={hasCritical ? 'error.main' : hasLowStock ? 'warning.main' : 'text.secondary'}
+                sx={{ fontWeight: hasLowStock ? 700 : 400 }}
               >
-                {lowStockAlerts.length > 0
-                  ? 'Items at or below alert level'
-                  : 'No stock alerts right now'}
+                {hasCritical
+                  ? `${criticalCount} critical item${criticalCount === 1 ? '' : 's'}`
+                  : hasLowStock
+                    ? 'Items at or below alert level'
+                    : 'No stock alerts right now'}
               </Typography>
             }
           />
@@ -233,16 +242,34 @@ export function DashboardPage() {
         <DataTableCard
           title="Low stock alerts"
           action={
-            lowStockAlerts.length > 0 ? (
-              <Button
-                size="small"
-                color="primary"
-                endIcon={<ArrowForwardIcon />}
-                onClick={() => navigate('/products')}
-                sx={{ fontWeight: 700 }}
-              >
-                Manage products
-              </Button>
+            hasLowStock ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {hasCritical && (
+                  <Typography
+                    component="span"
+                    sx={{
+                      ...labelCapsSx,
+                      bgcolor: 'error.light',
+                      color: 'error.dark',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 999,
+                      fontSize: '0.65rem',
+                    }}
+                  >
+                    {criticalCount} critical
+                  </Typography>
+                )}
+                <Button
+                  size="small"
+                  color="primary"
+                  endIcon={<ArrowForwardIcon />}
+                  onClick={() => navigate('/products')}
+                  sx={{ fontWeight: 700 }}
+                >
+                  Manage products
+                </Button>
+              </Box>
             ) : undefined
           }
         >
@@ -284,8 +311,8 @@ export function DashboardPage() {
                     </TableCell>
                     <TableCell>
                       <StatusChip
-                        status={alert.qty === 0 ? 'error' : 'warning'}
-                        label={alert.qty === 0 ? 'Out of stock' : 'Low stock'}
+                        status={stockAlertLevelToChipStatus(alert.level)}
+                        label={stockAlertLevelLabel(alert.level)}
                       />
                     </TableCell>
                   </TableRow>

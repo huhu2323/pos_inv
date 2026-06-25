@@ -13,12 +13,16 @@ import { PosPaymentPanel } from '@/features/pos/components/PosPaymentPanel'
 import { PosProductGrid } from '@/features/pos/components/PosProductGrid'
 import { PosSearchDialog } from '@/features/pos/components/PosSearchDialog'
 import { usePosCart } from '@/features/pos/hooks/usePosCart'
-import { buildSellableItems, type PosSellableItem } from '@/features/pos/utils/posProducts'
+import {
+  buildSellableItems,
+  sortSellableItemsByPopularity,
+  type PosSellableItem,
+} from '@/features/pos/utils/posProducts'
 import { autoPrintForCompletedSale } from '@/features/invoices/utils/printInvoice'
 import type { Product } from '@/lib/db/types'
 import { listActiveProducts } from '@/lib/services/productService'
 import { getSettings } from '@/lib/services/settingsService'
-import { createSale } from '@/lib/services/saleService'
+import { createSale, getSellablePurchaseCounts } from '@/lib/services/saleService'
 import { stitchDesignTokens } from '@/shared/theme/stitchDesignTokens'
 import { labelCapsSx } from '@/shared/theme/stitchStyles'
 
@@ -33,7 +37,8 @@ export function PosPage() {
   const [completingSale, setCompletingSale] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [barcodeOpen, setBarcodeOpen] = useState(false)
-  const [browseOpen, setBrowseOpen] = useState(false)
+  const [browseOpen, setBrowseOpen] = useState(true)
+  const [purchaseCounts, setPurchaseCounts] = useState<Map<string, number>>(new Map())
   const [continuousBarcodeScanning, setContinuousBarcodeScanning] = useState(false)
 
   const {
@@ -50,7 +55,10 @@ export function PosPage() {
     clearCart,
   } = usePosCart()
 
-  const sellableItems = useMemo(() => buildSellableItems(products), [products])
+  const sellableItems = useMemo(
+    () => sortSellableItemsByPopularity(buildSellableItems(products), purchaseCounts),
+    [products, purchaseCounts],
+  )
   const subtotal = total
 
   useEffect(() => {
@@ -61,10 +69,15 @@ export function PosPage() {
       setError(null)
 
       try {
-        const [items, settings] = await Promise.all([listActiveProducts(), getSettings()])
+        const [items, settings, counts] = await Promise.all([
+          listActiveProducts(),
+          getSettings(),
+          getSellablePurchaseCounts(),
+        ])
         if (active) {
           setProducts(items)
           setContinuousBarcodeScanning(settings.continuousBarcodeScanning)
+          setPurchaseCounts(counts)
         }
       } catch (err) {
         if (active) {
@@ -95,8 +108,9 @@ export function PosPage() {
   }
 
   async function reloadProducts() {
-    const items = await listActiveProducts()
+    const [items, counts] = await Promise.all([listActiveProducts(), getSellablePurchaseCounts()])
     setProducts(items)
+    setPurchaseCounts(counts)
   }
 
   async function handleCompleteSale() {
