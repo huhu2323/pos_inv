@@ -15,7 +15,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listProducts } from '@/lib/services/productService'
 import { PRODUCT_UNIT_LABELS } from '@/shared/utils/productUnitOfMeasure'
@@ -40,29 +40,34 @@ export function LowStockAlertNotifier() {
   const criticalCount = countCriticalStockAlerts(alerts)
   const hasCritical = criticalCount > 0
 
-  const reloadAlerts = useCallback(async () => {
-    const products = await listProducts()
-    setAlerts(collectLowStockAlerts(products))
-  }, [])
-
   useEffect(() => {
-    void reloadAlerts()
+    let active = true
+
+    async function loadAlerts() {
+      const products = await listProducts()
+      if (active) {
+        setAlerts(collectLowStockAlerts(products))
+      }
+    }
+
+    void loadAlerts()
 
     const intervalId = window.setInterval(() => {
-      void reloadAlerts()
+      void loadAlerts()
     }, POLL_INTERVAL_MS)
 
     function handleFocus() {
-      void reloadAlerts()
+      void loadAlerts()
     }
 
     window.addEventListener('focus', handleFocus)
 
     return () => {
+      active = false
       window.clearInterval(intervalId)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [reloadAlerts])
+  }, [])
 
   const menuOpen = Boolean(anchorEl)
 

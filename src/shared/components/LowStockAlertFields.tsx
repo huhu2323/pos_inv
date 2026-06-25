@@ -7,11 +7,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import {
-  DEFAULT_LOW_STOCK_ALERT_MODE,
-  LOW_STOCK_ALERT_MODES,
-  type LowStockAlertMode,
-} from '@/shared/utils/lowStockAlert'
+import { LOW_STOCK_ALERT_MODES, type LowStockAlertMode } from '@/shared/utils/lowStockAlert'
 
 interface LowStockAlertFieldsProps {
   initialQty: string
@@ -96,8 +92,4 @@ export function LowStockAlertFields({
       )}
     </Stack>
   )
-}
-
-export function getDefaultLowStockAlertMode(): LowStockAlertMode {
-  return DEFAULT_LOW_STOCK_ALERT_MODE
 }
